@@ -59,12 +59,12 @@
   <div id="main" style="display:none; width:100%; max-width:420px; flex-direction:column; align-items:center;">
     
     <div class="shadow-zone" id="shadowZone">
-      <div class="section-title" style="color:#ffaa00;">[ STEP 1 ] 근육 각인 섀도잉 (목표: 1회)</div>
+      <div class="section-title" style="color:#ffaa00;">[ STEP 1 ] 근육 각인 섀도잉 (목표: 30회)</div>
       <div class="target-text" id="targetSentence">Loading...</div>
       <div class="target-voca" id="targetVoca"></div>
       
       <div class="progress-container"><div class="progress-bar" id="progressBar"></div></div>
-      <div class="count-text" id="countText">0 / 1 성공</div>
+      <div class="count-text" id="countText">0 / 30 성공</div>
 
       <div class="feedback-box" id="feedbackBox">하단의 말하기 버튼을 눌러 발음을 시작하고, 완료 후 다시 눌러 전송하십시오.</div>
       
@@ -90,7 +90,8 @@
     const API_URL = "https://script.google.com/macros/s/AKfycbyuMPRaNEUCrr3FLjPDuQBgdOM1GTsPD8KG9g1-AN01NPv9k75VqIGSEXggUvavniyh/exec";
     const API_STORAGE_KEY = 'hexagon_gemini_api_key';
 
-    const TARGET_REPS = 1; 
+    // 훈련 목표 횟수 정상화
+    const TARGET_REPS = 30; 
     let currentReps = 0;
     let targetSentence = "";
     let targetRow = null;
@@ -377,7 +378,6 @@
     }
 
     function goHome() {
-      // 깃허브 동일 저장소 내의 메인 페이지로 이동합니다.
       window.location.href = 'index.html';
     }
   </script>
