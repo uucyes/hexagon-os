@@ -5,32 +5,35 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>HEXAGON.OS - STAMINA MODULE</title>
   <style>
-    :root { --p: #00ffcc; --bg: #050505; --card: #141414; }
+    :root { --p: #00ffcc; --bg: #050505; --card: #141414; --danger: #ff4444; }
     body { background: var(--bg); color: #fff; font-family: sans-serif; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
     .header { width: 100%; max-width: 400px; display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; }
     .card { background: var(--card); border-top: 3px solid var(--p); padding: 15px; width: 100%; max-width: 400px; border-radius: 6px; margin-bottom: 15px; box-sizing: border-box; }
     .title { color: var(--p); font-size: 14px; font-weight: bold; margin-bottom: 10px; }
     .target { font-size: 18px; font-weight: bold; margin-bottom: 5px; }
     .guide { font-size: 13px; color: #aaa; line-height: 1.4; }
-    .chat { height: 300px; background: #000; border: 1px solid #333; border-radius: 6px; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 10px; box-sizing: border-box; width: 100%; max-width: 400px; }
+    
+    .chat { height: 300px; background: #000; border: 1px solid #333; border-radius: 6px; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 10px; box-sizing: border-box; width: 100%; max-width: 400px; margin-bottom: 15px; }
     .bubble { max-width: 85%; padding: 10px; border-radius: 8px; font-size: 14px; line-height: 1.4; }
     .ai { align-self: flex-start; background: #1a1a1a; border-left: 3px solid var(--p); }
     .user { align-self: flex-end; background: #333; }
     
-    .guide-text { font-size: 11px; color: #888; text-align: center; margin-bottom: 5px; width: 100%; max-width: 400px; margin-top: 15px; }
-    .input-grp { display: flex; gap: 5px; width: 100%; max-width: 400px; }
-    input { flex: 1; background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 12px; border-radius: 4px; font-size: 14px; }
-    input:focus { outline: none; border-color: var(--p); background: #111; }
-    .btn { padding: 0 15px; border-radius: 4px; font-weight: bold; cursor: pointer; border: none; transition: 0.2s; }
-    .btn-send { background: var(--p); color: #000; }
-    .btn-send:active { transform: scale(0.95); }
+    .btn { width: 100%; padding: 14px; border-radius: 6px; border: none; font-weight: bold; font-size: 15px; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: all 0.2s; }
+    .btn-record { background: var(--p); color: #000; }
+    .btn-record.recording { background: var(--danger); color: #fff; animation: pulse 1.5s infinite; }
     
-    .btn-log { width: 100%; max-width: 400px; margin-top: 20px; background: none; border: 1px solid var(--p); color: var(--p); padding: 15px; border-radius: 4px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+    .btn-log { width: 100%; max-width: 400px; margin-top: 15px; background: none; border: 1px solid var(--p); color: var(--p); padding: 15px; border-radius: 4px; font-weight: bold; cursor: pointer; transition: 0.2s; }
     .btn-log:active { background: var(--p); color: #000; }
     
     .lock-screen { display: none; flex-direction: column; align-items: center; justify-content: center; width: 100%; max-width: 400px; padding: 40px 20px; border: 1px dashed var(--p); border-radius: 8px; text-align: center; box-sizing: border-box; }
     .lock-title { font-size: 18px; font-weight: bold; color: var(--p); margin-bottom: 10px; }
     .lock-msg { font-size: 14px; color: #aaa; line-height: 1.5; margin-bottom: 20px; }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(0.98); box-shadow: 0 0 10px var(--danger); }
+      100% { transform: scale(1); }
+    }
   </style>
 </head>
 <body>
@@ -39,7 +42,7 @@
     <span onclick="goHome()" style="color:#888; cursor:pointer;">[ EXIT ]</span>
   </div>
   
-  <div id="loading" style="color:var(--p); padding:50px; font-weight:bold;">LOADING MODULE...</div>
+  <div id="loading" style="color:var(--p); padding:50px; font-weight:bold; text-align:center;">LOADING MODULE...</div>
   
   <div id="lockScreen" class="lock-screen">
     <div class="lock-title">[ 오늘의 체력 훈련 완료 ]</div>
@@ -55,14 +58,10 @@
     </div>
     
     <div class="chat" id="history">
-      <div class="bubble ai">오늘의 마라톤 훈련 목표를 확인하셨습니까? 훈련을 마친 후 아래 입력창을 터치하고 키보드 마이크를 켜서 러닝 결과와 컨디션을 한국어로 보고해 주십시오.</div>
+      <div class="bubble ai">오늘의 마라톤 훈련 목표를 확인하셨습니까? 하단의 말하기 버튼을 누르고 오늘 러닝의 페이스, 호흡, 컨디션 등을 음성으로 바로 보고해 주십시오.</div>
     </div>
     
-    <div class="guide-text">▼ 아래 텍스트 칸을 터치하고 키보드 마이크(🎙️)를 켜세요 ▼</div>
-    <div class="input-grp">
-      <input type="text" id="msg" placeholder="키보드 마이크로 훈련 결과 보고..." onkeypress="if(event.key==='Enter') send()">
-      <button class="btn btn-send" onclick="send()">SEND</button>
-    </div>
+    <button class="btn btn-record" id="btnMicChat" onclick="toggleRecording()">🎙️ 음성으로 보고하기</button>
     
     <button class="btn-log" onclick="saveLog()">[ 훈련 완료 및 진도 넘어가기 ]</button>
   </div>
@@ -74,6 +73,10 @@
     let pmt = "";
     let targetRow = null;
     let targetCol = null;
+
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let isRecording = false;
 
     window.onload = function() {
       fetch(API_URL + "?action=getData")
@@ -115,37 +118,97 @@
       return savedKey;
     }
 
-    function send() {
-      const i = document.getElementById('msg'); 
-      const v = i.value.trim(); 
-      if(!v) return;
+    async function toggleRecording() {
+      if (!checkApiKey()) return;
+      const btn = document.getElementById('btnMicChat');
 
+      if (!isRecording) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          mediaRecorder = new MediaRecorder(stream);
+          audioChunks = [];
+
+          mediaRecorder.ondataavailable = e => {
+            if (e.data.size > 0) audioChunks.push(e.data);
+          };
+
+          mediaRecorder.onstop = () => {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            processAudioBlob(audioBlob);
+            stream.getTracks().forEach(track => track.stop());
+          };
+
+          mediaRecorder.start();
+          isRecording = true;
+          btn.innerText = "[ 듣고 있습니다. 완료 시 다시 터치 ]";
+          btn.classList.add('recording');
+
+        } catch (err) {
+          alert("마이크 접근이 차단되었습니다. 기기의 마이크 권한 설정을 확인해 주십시오.");
+        }
+      } else {
+        mediaRecorder.stop();
+        isRecording = false;
+        btn.innerText = "[ 데이터 전송 및 AI 분석 중... ]";
+        btn.classList.remove('recording');
+        btn.disabled = true;
+      }
+    }
+
+    function processAudioBlob(blob) {
+      const reader = new FileReader();
+      reader.readAsDataURL(blob);
+      reader.onloadend = () => {
+        sendAudioChat(reader.result, blob.type);
+      };
+    }
+
+    function sendAudioChat(base64Data, mimeType) {
       const apiKey = checkApiKey();
       if(!apiKey) return;
 
       const h = document.getElementById('history'); 
-      h.innerHTML += `<div class="bubble user">${v}</div>`;
-      i.value = ""; 
-      h.scrollTop = h.scrollHeight;
-      
       const loadId = 'load-' + Date.now();
-      h.innerHTML += `<div class="bubble ai" id="${loadId}" style="color:#aaa;">AI 코치가 보고를 분석 중입니다...</div>`;
+      h.innerHTML += `<div class="bubble ai" id="${loadId}" style="color:#aaa;">AI 코치가 음성 보고를 분석 중입니다...</div>`;
       h.scrollTop = h.scrollHeight;
 
       const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey;
-      const promptData = `시스템 설정: ${pmt}\n사용자 보고: ${v}`;
+      const promptData = `시스템 설정: ${pmt}\n\n첨부된 사용자의 음성을 듣고 마라톤 코치로서 피드백을 제공하십시오. 반드시 첫 줄에는 사용자가 음성으로 말한 내용을 "[인식결과: 사용자가 한 말]" 형태로 적고, 두 번째 줄부터 코치의 피드백을 적으십시오.`;
+      const cleanBase64 = base64Data.split(',')[1];
 
       fetch(url, {
         method: "POST", 
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ "contents": [{ "parts": [{"text": promptData}] }] })
+        body: JSON.stringify({
+          "contents": [{
+            "parts": [
+              {"text": promptData},
+              { "inline_data": { "mime_type": mimeType || "audio/webm", "data": cleanBase64 } }
+            ]
+          }]
+        })
       })
       .then(response => response.json())
       .then(data => {
         document.getElementById(loadId).remove();
+        const btn = document.getElementById('btnMicChat');
+        btn.innerText = "🎙️ 음성으로 보고하기";
+        btn.disabled = false;
+
         if (data.candidates && data.candidates.length > 0) {
-          const cleanAiText = data.candidates[0].content.parts[0].text.replace(/[\*\#]/g, '');
-          h.innerHTML += `<div class="bubble ai">${cleanAiText}</div>`;
+          let aiReply = data.candidates[0].content.parts[0].text.replace(/[\*\#]/g, '');
+          let recognizedText = "";
+          
+          const recMatch = aiReply.match(/\[인식결과:.*?\]/);
+          if(recMatch) {
+            recognizedText = recMatch[0].replace('[인식결과:', '').replace(']', '').trim();
+            aiReply = aiReply.replace(recMatch[0], '').trim();
+            h.innerHTML += `<div class="bubble user">${recognizedText}</div>`;
+          } else {
+            h.innerHTML += `<div class="bubble user">[음성 전송 완료]</div>`;
+          }
+          
+          h.innerHTML += `<div class="bubble ai">${aiReply}</div>`;
         } else {
           h.innerHTML += `<div class="bubble ai" style="color:var(--danger);">AI 응답 오류가 발생했습니다.</div>`;
         }
@@ -153,13 +216,16 @@
       })
       .catch(err => {
         document.getElementById(loadId).remove();
+        const btn = document.getElementById('btnMicChat');
+        btn.innerText = "🎙️ 음성으로 보고하기";
+        btn.disabled = false;
         h.innerHTML += `<div class="bubble ai" style="color:var(--danger);">통신 오류가 발생했습니다.</div>`;
         h.scrollTop = h.scrollHeight; 
       });
     }
 
     function saveLog() {
-      showCustomPrompt("훈련 일지", "오늘 훈련의 소감이나 특이사항을 간단히 남겨주세요 (키보드 마이크 사용 가능):", function(fb) {
+      showCustomPrompt("훈련 일지", "오늘 러닝의 총 소감이나 특이사항을 간단히 남겨주세요:", function(fb) {
         if(fb !== null) {
           document.body.style.cursor = 'wait';
           
@@ -181,7 +247,7 @@
           .then(data => {
             document.body.style.cursor = 'default';
             if(data.success) {
-              showCustomModal("기록 완료", "마라톤 훈련 기록이 성공적으로 저장되었습니다.<br>다음 진도로 넘어갑니다.", false, goHome); 
+              showCustomModal("기록 완료", "마라톤 훈련 기록이 성공적으로 저장되었습니다.<br>메인으로 복귀합니다.", false, goHome); 
             } else {
               showCustomModal("오류", "기록 실패: " + data.error, false);
             }
@@ -233,7 +299,7 @@
       box.innerHTML = `
         <div style="font-size:18px;font-weight:bold;color:var(--p);margin-bottom:15px;letter-spacing:1px;">${title}</div>
         <div style="font-size:14px;color:#ccc;margin-bottom:15px;line-height:1.6;word-break:keep-all;">${msg}</div>
-        <input type="text" id="promptInput" placeholder="여기를 터치 후 마이크로 입력하세요" style="width:100%; background:#000; border:1px solid #444; color:#fff; padding:12px; margin-bottom:20px; border-radius:4px; box-sizing:border-box; font-family:inherit;">
+        <input type="text" id="promptInput" style="width:100%; background:#000; border:1px solid #444; color:#fff; padding:12px; margin-bottom:20px; border-radius:4px; box-sizing:border-box; font-family:inherit;">
         <div style="display:flex;gap:10px;justify-content:center;">
           <button id="btnCancel" style="flex:1;background:transparent;border:1px solid #666;color:#ccc;padding:12px;border-radius:4px;font-weight:bold;cursor:pointer;">취소</button>
           <button id="btnOk" style="flex:1;background:var(--p);border:none;color:#000;font-weight:bold;padding:12px;border-radius:4px;cursor:pointer;">확인</button>
