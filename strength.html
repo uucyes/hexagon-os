@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>HEXAGON.OS - FITNESS MODULE</title>
+  <style>
+    :root {
+      --bg-color: #050505;
+      --panel-bg: rgba(20, 20, 20, 0.9);
+      --neon-red: #ff003c;
+      --neon-red-glow: rgba(255, 0, 60, 0.4);
+      --text-main: #ffffff;
+      --text-muted: #888888;
+      --border-color: #333333;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+
+    .header-panel {
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 15px;
+      margin-bottom: 20px;
+    }
+
+    .system-title {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: 3px;
+      color: var(--text-main);
+      text-transform: uppercase;
+    }
+
+    .nav-btn {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border-color);
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      transition: all 0.2s ease;
+    }
+
+    .nav-btn:active {
+      background: var(--border-color);
+      color: var(--text-main);
+    }
+
+    .cyber-card {
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      border-left: 4px solid var(--neon-red);
+      border-radius: 6px;
+      padding: 20px;
+      width: 100%;
+      max-width: 420px;
+      box-sizing: border-box;
+      margin-bottom: 15px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+      transition: opacity 0.4s ease;
+    }
+
+    .exercise-done {
+      opacity: 0.4;
+      border-left-color: #444444;
+    }
+
+    .exercise-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 5px;
+    }
+
+    .exercise-meta {
+      font-size: 14px;
+      color: var(--neon-red);
+      margin-bottom: 12px;
+      font-weight: 600;
+      letter-spacing: 1px;
+    }
+
+    .exercise-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 15px;
+      background: #111111;
+      padding: 10px;
+      border-radius: 4px;
+      border: 1px dashed var(--border-color);
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .set-btn {
+      flex: 1;
+      padding: 12px 5px;
+      background: transparent;
+      color: var(--neon-red);
+      border: 1px solid var(--neon-red);
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: bold;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-transform: uppercase;
+    }
+
+    .set-btn:active {
+      background: var(--neon-red);
+      color: #000000;
+    }
+
+    .set-btn.done {
+      background: var(--neon-red);
+      color: #000000;
+      border-color: var(--neon-red);
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .cyber-btn {
+      width: 100%;
+      background: transparent;
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+      padding: 12px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: bold;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+    }
+
+    .cyber-btn:active {
+      background: var(--border-color);
+    }
+
+    .timer-panel {
+      display: none;
+      background-color: var(--neon-red);
+      color: #000000;
+      padding: 15px;
+      border-radius: 6px;
+      text-align: center;
+      font-size: 24px;
+      font-weight: 900;
+      width: 100%;
+      max-width: 420px;
+      box-sizing: border-box;
+      margin-bottom: 20px;
+      box-shadow: 0 0 20px var(--neon-red-glow);
+      letter-spacing: 2px;
+    }
+
+    .status-msg {
+      text-align: center;
+      color: var(--neon-red);
+      font-size: 14px;
+      padding: 30px 0;
+      letter-spacing: 1px;
+      font-weight: bold;
+    }
+
+    .action-panel {
+      width: 100%;
+      max-width: 420px;
+      margin-top: 10px;
+      margin-bottom: 30px;
+    }
+
+    .submit-btn {
+      width: 100%;
+      background: var(--neon-red);
+      color: #000000;
+      border: none;
+      padding: 16px;
+      font-size: 15px;
+      font-weight: 800;
+      border-radius: 4px;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      box-shadow: 0 0 10px var(--neon-red-glow);
+      display: none;
+    }
+
+    .submit-btn:active {
+      transform: scale(0.98);
+    }
+
+    .lock-screen { display: none; flex-direction: column; align-items: center; justify-content: center; width: 100%; max-width: 420px; padding: 40px 20px; border: 1px dashed var(--neon-red); border-radius: 8px; text-align: center; box-sizing: border-box; margin-bottom: 20px;}
+    .lock-title { font-size: 18px; font-weight: bold; color: var(--neon-red); margin-bottom: 10px; }
+    .lock-msg { font-size: 14px; color: #aaa; line-height: 1.5; margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+
+  <div class="header-panel">
+    <div class="system-title">FITNESS.SYS</div>
+    <button class="nav-btn" onclick="goHome()">[ RETURN TO OS ]</button>
+  </div>
+  
+  <div id="timer-display" class="timer-panel">
+    REST T-<span id="time-left">0</span>S
+  </div>
+
+  <div id="lockScreen" class="lock-screen">
+    <div class="lock-title">[ 오늘의 근력 훈련 완료 ]</div>
+    <div class="lock-msg">오늘 할당된 목표가 이미 시스템에 안전하게 기록되었습니다.<br>내일 다시 방문해 주십시오.</div>
+    <button style="background:var(--neon-red); color:#000; padding:10px 20px; border:none; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="goHome()">메인으로 복귀</button>
+  </div>
+
+  <div id="module-container" style="width: 100%; max-width: 420px;">
+    <div class="status-msg" id="loading-msg">CONNECTING TO DATABASE...</div>
+  </div>
+
+  <div class="action-panel">
+    <button class="submit-btn" id="finish-btn" onclick="finishStrength()">SUBMIT LOG</button>
+  </div>
+
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbyuMPRaNEUCrr3FLjPDuQBgdOM1GTsPD8KG9g1-AN01NPv9k75VqIGSEXggUvavniyh/exec";
+    let timerInterval;
+    window.exerciseState = [];
+
+    window.onload = function() {
+      fetch(API_URL + "?action=getData")
+        .then(response => response.json())
+        .then(data => renderData(data))
+        .catch(error => {
+          document.getElementById('module-container').innerHTML = 
+            `<div class='status-msg'>SYSTEM ERROR: ${error.message}</div>`;
+        });
+    };
+
+    function renderData(res) {
+      try {
+        const container = document.getElementById('module-container');
+        
+        if (!res || !res.success) {
+          container.innerHTML = `<div class='status-msg'>DATA LOAD FAILED: ${res ? res.error : 'Unknown'}</div>`;
+          return;
+        }
+
+        if (res.locks && res.locks.strength) {
+          document.getElementById('lockScreen').style.display = 'flex';
+          container.style.display = 'none';
+          document.getElementById('finish-btn').style.display = 'none';
+          return; 
+        }
+
+        const data = res.strength;
+        
+        if (!data || data.length === 0) {
+          container.innerHTML = "<div class='status-msg' style='color:#888;'>SYSTEM MSG: NO TRAINING SCHEDULED TODAY.</div>";
+          return;
+        }
+
+        window.exerciseState = [];
+
+        container.innerHTML = data.map((ex, exIdx) => {
+          const exerciseName = ex[2] || '이름 없음';
+          const sets = parseInt(ex[3]) || 3;
+          const targetReps = ex[4] || '';
+          const checkPoint = ex[6] || '';
+          const restTime = parseInt(ex[7]) || 60;
+          
+          const videoUrl = ex[8] ? String(ex[8]).trim() : '';
+          let videoBtnHtml = '';
+          
+          if (videoUrl.startsWith('http')) {
+            videoBtnHtml = `<button class="cyber-btn" onclick="window.open('${videoUrl}', '_blank')">[ REF ] 전용 운동 영상 보기</button>`;
+          } else {
+            const searchQuery = encodeURIComponent(exerciseName + " 홈트 정확한 자세");
+            const searchUrl = `https://www.youtube.com/results?search_query=${searchQuery}`;
+            videoBtnHtml = `<button class="cyber-btn" onclick="window.open('${searchUrl}', '_blank')" style="border-color: var(--neon-red); color: var(--neon-red);">[ AI SEARCH ] ${exerciseName} 영상 검색</button>`;
+          }
+          
+          window.exerciseState.push({ total: sets, done: 0 });
+
+          let setButtonsHtml = '';
+          for(let i=1; i<=sets; i++) {
+            setButtonsHtml += `<button id="btn-${exIdx}-${i}" class="set-btn" onclick="completeSet(${exIdx}, ${i}, ${restTime})">SET ${i}</button>`;
+          }
+
+          return `
+            <div id="card-${exIdx}" class="cyber-card">
+              <div class="exercise-title">${exerciseName}</div>
+              <div class="exercise-meta">TARGET: ${sets} SETS / ${targetReps}</div>
+              <div class="exercise-desc">CHECKPOINT: ${checkPoint}</div>
+              
+              <div class="btn-group">
+                ${setButtonsHtml}
+              </div>
+              ${videoBtnHtml}
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        document.getElementById('module-container').innerHTML = `<div class='status-msg' style='color: yellow;'>RENDER ERROR: 화면 데이터 구성 중 오류가 발생했습니다.<br>${err.message}</div>`;
+      }
+    }
+
+    function completeSet(exIdx, setNum, restTime) {
+      const btn = document.getElementById(`btn-${exIdx}-${setNum}`);
+      if (btn.classList.contains('done')) return;
+
+      btn.classList.add('done');
+      btn.innerText = 'DONE';
+      btn.disabled = true;
+
+      window.exerciseState[exIdx].done += 1;
+
+      if (window.exerciseState[exIdx].done >= window.exerciseState[exIdx].total) {
+        document.getElementById(`card-${exIdx}`).classList.add('exercise-done');
+      }
+
+      checkAllCompleted();
+      startTimer(restTime);
+    }
+
+    function checkAllCompleted() {
+      const allDone = window.exerciseState.every(ex => ex.done >= ex.total);
+      if (allDone) {
+        document.getElementById('finish-btn').style.display = 'block';
+      }
+    }
+
+    function startTimer(seconds) {
+      clearInterval(timerInterval);
+      const timerDisplay = document.getElementById('timer-display');
+      const timeLeftSpan = document.getElementById('time-left');
+      
+      let timeLeft = parseInt(seconds);
+      timerDisplay.style.display = 'block';
+      timeLeftSpan.innerText = timeLeft;
+
+      timerInterval = setInterval(() => {
+        timeLeft -= 1;
+        timeLeftSpan.innerText = timeLeft;
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          timerDisplay.style.display = 'none';
+          showCustomModal("휴식 종료", "REST TIME ELAPSED.<br>PREPARE FOR NEXT SET.", false);
+        }
+      }, 1000);
+    }
+
+    function finishStrength() {
+      showCustomPrompt("TRAINING LOG", "INPUT TRAINING LOG (CONDITION, WEIGHT ETC):", function(feedback) {
+        if (feedback !== null) {
+          document.body.style.cursor = 'wait';
+          
+          const payload = {
+            category: '근력', 
+            content: '근력운동 (홈트레이닝)', 
+            value: 1, 
+            feedback: feedback
+          };
+
+          fetch(API_URL, {
+            method: "POST",
+            body: JSON.stringify({ action: "logActivity", payload: payload })
+          })
+          .then(response => response.json())
+          .then(data => {
+            document.body.style.cursor = 'default';
+            if(data.success) {
+              showCustomModal("기록 완료", "성공적으로 시스템에 기록되었습니다.", false, goHome);
+            } else {
+              showCustomModal("오류 발생", "UPLOAD FAILED: " + data.error, false);
+            }
+          })
+          .catch(error => {
+            document.body.style.cursor = 'default';
+            showCustomModal("오류 발생", "통신 오류로 실적을 기록하지 못했습니다.", false);
+          });
+        }
+      });
+    }
+
+    function goHome() {
+      window.location.href = 'index.html';
+    }
+
+    // ── 자체 팝업 모달(Custom Modal) 엔진 ──────────────────────────────
+    function showCustomModal(title, msg, isConfirm, onConfirm) {
+      const overlay = document.createElement('div');
+      overlay.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:9999;display:flex;justify-content:center;align-items:center;";
+      const box = document.createElement('div');
+      box.style.cssText = "background:#141414;border:1px solid #333;border-top:4px solid var(--neon-red);padding:25px;border-radius:8px;width:80%;max-width:320px;text-align:center;box-shadow:0 0 20px rgba(0,0,0,0.5);";
+      
+      box.innerHTML = `
+        <div style="font-size:18px;font-weight:bold;color:var(--neon-red);margin-bottom:15px;letter-spacing:1px;">${title}</div>
+        <div style="font-size:14px;color:#ccc;margin-bottom:25px;line-height:1.6;word-break:keep-all;">${msg}</div>
+        <div style="display:flex;gap:10px;justify-content:center;">
+          ${isConfirm ? '<button id="btnCancel" style="flex:1;background:transparent;border:1px solid #666;color:#ccc;padding:12px;border-radius:4px;font-weight:bold;cursor:pointer;">취소</button>' : ''}
+          <button id="btnOk" style="flex:1;background:var(--neon-red);border:none;color:#000;font-weight:bold;padding:12px;border-radius:4px;cursor:pointer;">확인</button>
+        </div>
+      `;
+      overlay.appendChild(box); document.body.appendChild(overlay);
+
+      document.getElementById('btnOk').onclick = () => {
+        document.body.removeChild(overlay); if(onConfirm) onConfirm();
+      };
+      if(isConfirm) {
+        document.getElementById('btnCancel').onclick = () => document.body.removeChild(overlay);
+      }
+    }
+
+    // ── 자체 팝업 입력창(Custom Prompt) 엔진 ──────────────────────────────
+    function showCustomPrompt(title, msg, onConfirm) {
+      const overlay = document.createElement('div');
+      overlay.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:9999;display:flex;justify-content:center;align-items:center;";
+      const box = document.createElement('div');
+      box.style.cssText = "background:#141414;border:1px solid #333;border-top:4px solid var(--neon-red);padding:25px;border-radius:8px;width:80%;max-width:320px;text-align:center;box-shadow:0 0 20px rgba(0,0,0,0.5);";
+
+      box.innerHTML = `
+        <div style="font-size:18px;font-weight:bold;color:var(--neon-red);margin-bottom:15px;letter-spacing:1px;">${title}</div>
+        <div style="font-size:14px;color:#ccc;margin-bottom:15px;line-height:1.6;word-break:keep-all;">${msg}</div>
+        <input type="text" id="promptInput" style="width:100%; background:#000; border:1px solid #444; color:#fff; padding:12px; margin-bottom:20px; border-radius:4px; box-sizing:border-box; font-family:inherit;">
+        <div style="display:flex;gap:10px;justify-content:center;">
+          <button id="btnCancel" style="flex:1;background:transparent;border:1px solid #666;color:#ccc;padding:12px;border-radius:4px;font-weight:bold;cursor:pointer;">취소</button>
+          <button id="btnOk" style="flex:1;background:var(--neon-red);border:none;color:#000;font-weight:bold;padding:12px;border-radius:4px;cursor:pointer;">확인</button>
+        </div>
+      `;
+      overlay.appendChild(box); document.body.appendChild(overlay);
+      document.getElementById('promptInput').focus();
+
+      document.getElementById('btnOk').onclick = () => {
+        const val = document.getElementById('promptInput').value;
+        document.body.removeChild(overlay);
+        if(onConfirm) onConfirm(val);
+      };
+      document.getElementById('btnCancel').onclick = () => {
+        document.body.removeChild(overlay);
+      };
+    }
+  </script>
+</body>
+</html>
