@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>HEXAGON.OS - STAMINA MODULE</title>
+  <style>
+    :root { --p: #00ffcc; --bg: #050505; --card: #141414; }
+    body { background: var(--bg); color: #fff; font-family: sans-serif; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
+    .header { width: 100%; max-width: 400px; display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+    .card { background: var(--card); border-top: 3px solid var(--p); padding: 15px; width: 100%; max-width: 400px; border-radius: 6px; margin-bottom: 15px; box-sizing: border-box; }
+    .title { color: var(--p); font-size: 14px; font-weight: bold; margin-bottom: 10px; }
+    .target { font-size: 18px; font-weight: bold; margin-bottom: 5px; }
+    .guide { font-size: 13px; color: #aaa; line-height: 1.4; }
+    .chat { height: 300px; background: #000; border: 1px solid #333; border-radius: 6px; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 10px; box-sizing: border-box; width: 100%; max-width: 400px; }
+    .bubble { max-width: 85%; padding: 10px; border-radius: 8px; font-size: 14px; line-height: 1.4; }
+    .ai { align-self: flex-start; background: #1a1a1a; border-left: 3px solid var(--p); }
+    .user { align-self: flex-end; background: #333; }
+    
+    .guide-text { font-size: 11px; color: #888; text-align: center; margin-bottom: 5px; width: 100%; max-width: 400px; margin-top: 15px; }
+    .input-grp { display: flex; gap: 5px; width: 100%; max-width: 400px; }
+    input { flex: 1; background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 12px; border-radius: 4px; font-size: 14px; }
+    input:focus { outline: none; border-color: var(--p); background: #111; }
+    .btn { padding: 0 15px; border-radius: 4px; font-weight: bold; cursor: pointer; border: none; transition: 0.2s; }
+    .btn-send { background: var(--p); color: #000; }
+    .btn-send:active { transform: scale(0.95); }
+    
+    .btn-log { width: 100%; max-width: 400px; margin-top: 20px; background: none; border: 1px solid var(--p); color: var(--p); padding: 15px; border-radius: 4px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+    .btn-log:active { background: var(--p); color: #000; }
+    
+    .lock-screen { display: none; flex-direction: column; align-items: center; justify-content: center; width: 100%; max-width: 400px; padding: 40px 20px; border: 1px dashed var(--p); border-radius: 8px; text-align: center; box-sizing: border-box; }
+    .lock-title { font-size: 18px; font-weight: bold; color: var(--p); margin-bottom: 10px; }
+    .lock-msg { font-size: 14px; color: #aaa; line-height: 1.5; margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <b style="letter-spacing:2px; color:var(--p);">STAMINA.OS (MARATHON)</b>
+    <span onclick="goHome()" style="color:#888; cursor:pointer;">[ EXIT ]</span>
+  </div>
+  
+  <div id="loading" style="color:var(--p); padding:50px; font-weight:bold;">LOADING MODULE...</div>
+  
+  <div id="lockScreen" class="lock-screen">
+    <div class="lock-title">[ 오늘의 체력 훈련 완료 ]</div>
+    <div class="lock-msg">오늘 할당된 마라톤 훈련 목표가 이미 시스템에 안전하게 기록되었습니다.<br>내일 다시 방문해 주십시오.</div>
+    <button style="background:var(--p); color:#000; padding:10px 20px; border:none; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="goHome()">메인으로 복귀</button>
+  </div>
+
+  <div id="main" style="display:none; width:100%; max-width:400px; flex-direction:column; align-items:center;">
+    <div class="card">
+      <div class="title" id="type"></div>
+      <div class="target" id="target"></div>
+      <div class="guide" id="guide"></div>
+    </div>
+    
+    <div class="chat" id="history">
+      <div class="bubble ai">오늘의 마라톤 훈련 목표를 확인하셨습니까? 훈련을 마친 후 아래 입력창을 터치하고 키보드 마이크를 켜서 러닝 결과와 컨디션을 한국어로 보고해 주십시오.</div>
+    </div>
+    
+    <div class="guide-text">▼ 아래 텍스트 칸을 터치하고 키보드 마이크(🎙️)를 켜세요 ▼</div>
+    <div class="input-grp">
+      <input type="text" id="msg" placeholder="키보드 마이크로 훈련 결과 보고..." onkeypress="if(event.key==='Enter') send()">
+      <button class="btn btn-send" onclick="send()">SEND</button>
+    </div>
+    
+    <button class="btn-log" onclick="saveLog()">[ 훈련 완료 및 진도 넘어가기 ]</button>
+  </div>
+
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbyuMPRaNEUCrr3FLjPDuQBgdOM1GTsPD8KG9g1-AN01NPv9k75VqIGSEXggUvavniyh/exec";
+    const API_STORAGE_KEY = 'hexagon_gemini_api_key';
+
+    let pmt = "";
+    let targetRow = null;
+    let targetCol = null;
+
+    window.onload = function() {
+      fetch(API_URL + "?action=getData")
+        .then(response => response.json())
+        .then(d => {
+          if (d.locks && d.locks.stamina) {
+            document.getElementById('lockScreen').style.display = 'flex';
+            document.getElementById('loading').style.display = 'none';
+            return; 
+          }
+
+          if(d.success && d.stamina && d.stamina.length > 0) {
+            const s = d.stamina;
+            targetCol = s[s.length - 1];
+            targetRow = s[s.length - 2];
+
+            pmt = s[5] + " 당신은 전문 마라톤 코치로서 대표님의 훈련 결과 보고를 듣고 짧고 명확하게 피드백을 제공하십시오.";
+            document.getElementById('type').innerText = `[ ${s[1]} ] ${s[2]}`;
+            document.getElementById('target').innerText = s[3];
+            document.getElementById('guide').innerText = s[4];
+            
+            document.getElementById('loading').style.display='none';
+            document.getElementById('main').style.display='flex';
+          } else { 
+            document.getElementById('loading').innerText="모든 진도를 완료했거나 데이터를 찾을 수 없습니다."; 
+          }
+        })
+        .catch(err => {
+          document.getElementById('loading').innerText="통신 오류가 발생했습니다."; 
+        });
+    };
+
+    function checkApiKey() {
+      const savedKey = localStorage.getItem(API_STORAGE_KEY);
+      if (!savedKey) {
+        alert("API 키가 설정되지 않았습니다. 메인 화면의 'AI 전략 브리핑'에서 키를 먼저 등록해 주십시오.");
+        return null;
+      }
+      return savedKey;
+    }
+
+    function send() {
+      const i = document.getElementById('msg'); 
+      const v = i.value.trim(); 
+      if(!v) return;
+
+      const apiKey = checkApiKey();
+      if(!apiKey) return;
+
+      const h = document.getElementById('history'); 
+      h.innerHTML += `<div class="bubble user">${v}</div>`;
+      i.value = ""; 
+      h.scrollTop = h.scrollHeight;
+      
+      const loadId = 'load-' + Date.now();
+      h.innerHTML += `<div class="bubble ai" id="${loadId}" style="color:#aaa;">AI 코치가 보고를 분석 중입니다...</div>`;
+      h.scrollTop = h.scrollHeight;
+
+      const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey;
+      const promptData = `시스템 설정: ${pmt}\n사용자 보고: ${v}`;
+
+      fetch(url, {
+        method: "POST", 
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ "contents": [{ "parts": [{"text": promptData}] }] })
+      })
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById(loadId).remove();
+        if (data.candidates && data.candidates.length > 0) {
+          const cleanAiText = data.candidates[0].content.parts[0].text.replace(/[\*\#]/g, '');
+          h.innerHTML += `<div class="bubble ai">${cleanAiText}</div>`;
+        } else {
+          h.innerHTML += `<div class="bubble ai" style="color:var(--danger);">AI 응답 오류가 발생했습니다.</div>`;
+        }
+        h.scrollTop = h.scrollHeight; 
+      })
+      .catch(err => {
+        document.getElementById(loadId).remove();
+        h.innerHTML += `<div class="bubble ai" style="color:var(--danger);">통신 오류가 발생했습니다.</div>`;
+        h.scrollTop = h.scrollHeight; 
+      });
+    }
+
+    function saveLog() {
+      showCustomPrompt("훈련 일지", "오늘 훈련의 소감이나 특이사항을 간단히 남겨주세요 (키보드 마이크 사용 가능):", function(fb) {
+        if(fb !== null) {
+          document.body.style.cursor = 'wait';
+          
+          const payload = {
+            category: '체력', 
+            content: '마라톤 훈련 (42.195km 대비)', 
+            value: 1, 
+            feedback: fb,
+            targetSheet: '연간_체력운동',
+            targetRow: targetRow,
+            targetCol: targetCol
+          };
+
+          fetch(API_URL, {
+            method: "POST",
+            body: JSON.stringify({ action: "logActivity", payload: payload })
+          })
+          .then(response => response.json())
+          .then(data => {
+            document.body.style.cursor = 'default';
+            if(data.success) {
+              showCustomModal("기록 완료", "마라톤 훈련 기록이 성공적으로 저장되었습니다.<br>다음 진도로 넘어갑니다.", false, goHome); 
+            } else {
+              showCustomModal("오류", "기록 실패: " + data.error, false);
+            }
+          })
+          .catch(err => {
+            document.body.style.cursor = 'default';
+            showCustomModal("오류", "통신 문제로 기록을 저장하지 못했습니다.", false);
+          });
+        }
+      });
+    }
+
+    function goHome() {
+      window.location.href = 'index.html';
+    }
+
+    // ── 자체 팝업 모달(Custom Modal) 엔진 ──
+    function showCustomModal(title, msg, isConfirm, onConfirm) {
+      const overlay = document.createElement('div');
+      overlay.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:9999;display:flex;justify-content:center;align-items:center;";
+      const box = document.createElement('div');
+      box.style.cssText = "background:#141414;border:1px solid #333;border-top:4px solid var(--p);padding:25px;border-radius:8px;width:80%;max-width:320px;text-align:center;box-shadow:0 0 20px rgba(0,0,0,0.5);";
+      
+      box.innerHTML = `
+        <div style="font-size:18px;font-weight:bold;color:var(--p);margin-bottom:15px;letter-spacing:1px;">${title}</div>
+        <div style="font-size:14px;color:#ccc;margin-bottom:25px;line-height:1.6;word-break:keep-all;">${msg}</div>
+        <div style="display:flex;gap:10px;justify-content:center;">
+          ${isConfirm ? '<button id="btnCancel" style="flex:1;background:transparent;border:1px solid #666;color:#ccc;padding:12px;border-radius:4px;font-weight:bold;cursor:pointer;">취소</button>' : ''}
+          <button id="btnOk" style="flex:1;background:var(--p);border:none;color:#000;font-weight:bold;padding:12px;border-radius:4px;cursor:pointer;">확인</button>
+        </div>
+      `;
+      overlay.appendChild(box); document.body.appendChild(overlay);
+
+      document.getElementById('btnOk').onclick = () => {
+        document.body.removeChild(overlay); if(onConfirm) onConfirm();
+      };
+      if(isConfirm) {
+        document.getElementById('btnCancel').onclick = () => document.body.removeChild(overlay);
+      }
+    }
+
+    // ── 자체 팝업 입력창(Custom Prompt) 엔진 ──
+    function showCustomPrompt(title, msg, onConfirm) {
+      const overlay = document.createElement('div');
+      overlay.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:9999;display:flex;justify-content:center;align-items:center;";
+      const box = document.createElement('div');
+      box.style.cssText = "background:#141414;border:1px solid #333;border-top:4px solid var(--p);padding:25px;border-radius:8px;width:80%;max-width:320px;text-align:center;box-shadow:0 0 20px rgba(0,0,0,0.5);";
+
+      box.innerHTML = `
+        <div style="font-size:18px;font-weight:bold;color:var(--p);margin-bottom:15px;letter-spacing:1px;">${title}</div>
+        <div style="font-size:14px;color:#ccc;margin-bottom:15px;line-height:1.6;word-break:keep-all;">${msg}</div>
+        <input type="text" id="promptInput" placeholder="여기를 터치 후 마이크로 입력하세요" style="width:100%; background:#000; border:1px solid #444; color:#fff; padding:12px; margin-bottom:20px; border-radius:4px; box-sizing:border-box; font-family:inherit;">
+        <div style="display:flex;gap:10px;justify-content:center;">
+          <button id="btnCancel" style="flex:1;background:transparent;border:1px solid #666;color:#ccc;padding:12px;border-radius:4px;font-weight:bold;cursor:pointer;">취소</button>
+          <button id="btnOk" style="flex:1;background:var(--p);border:none;color:#000;font-weight:bold;padding:12px;border-radius:4px;cursor:pointer;">확인</button>
+        </div>
+      `;
+      overlay.appendChild(box); document.body.appendChild(overlay);
+      document.getElementById('promptInput').focus();
+
+      document.getElementById('btnOk').onclick = () => {
+        const val = document.getElementById('promptInput').value;
+        document.body.removeChild(overlay);
+        if(onConfirm) onConfirm(val);
+      };
+      document.getElementById('btnCancel').onclick = () => {
+        document.body.removeChild(overlay);
+      };
+    }
+  </script>
+</body>
+</html>
