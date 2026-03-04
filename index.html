@@ -51,10 +51,26 @@
       border-radius: 12px; 
       padding: 20px; 
       box-sizing: border-box; 
-      margin-bottom: 20px;
+      margin-bottom: 15px;
       border: 1px solid #222;
       position: relative;
     }
+    .btn-briefing {
+      width: 100%;
+      max-width: 400px;
+      background: transparent;
+      border: 1px solid var(--primary);
+      color: var(--primary);
+      padding: 15px;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 14px;
+      cursor: pointer;
+      margin-bottom: 20px;
+      transition: 0.2s;
+    }
+    .btn-briefing:active { background: var(--primary); color: #000; }
+    
     .grid { 
       display: grid; 
       grid-template-columns: 1fr 1fr; 
@@ -78,32 +94,37 @@
       align-items: center;
       gap: 8px;
     }
-    .module-btn:active { 
-      transform: scale(0.98); 
-    }
+    .module-btn:active { transform: scale(0.98); }
     .module-btn.locked { 
       border-color: var(--primary); 
       color: var(--primary);
       background: #0a1f1c;
     }
-    .status-text {
-      font-size: 11px;
-      color: #888;
+    .status-text { font-size: 11px; color: #888; }
+    .locked .status-text { color: var(--primary); }
+    
+    #loading { color: var(--primary); font-weight: bold; text-align: center; padding: 50px; }
+    #mainContent { display: none; width: 100%; flex-direction: column; align-items: center; }
+
+    /* Custom Modal Styles */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.85); z-index: 9999; display: none;
+      justify-content: center; align-items: center;
     }
-    .locked .status-text {
-      color: var(--primary);
+    .modal-box {
+      background: #141414; border: 1px solid #333; border-top: 4px solid var(--primary);
+      padding: 25px; border-radius: 8px; width: 85%; max-width: 350px; box-shadow: 0 0 20px rgba(0,0,0,0.5);
     }
-    #loading {
-      color: var(--primary);
-      font-weight: bold;
-      text-align: center;
-      padding: 50px;
+    .modal-title { font-size: 16px; font-weight: bold; color: var(--primary); margin-bottom: 15px; }
+    .modal-content { font-size: 13px; color: #ccc; line-height: 1.6; margin-bottom: 20px; word-break: keep-all; }
+    .modal-input {
+      width: 100%; background: #000; border: 1px solid #444; color: #fff;
+      padding: 12px; border-radius: 4px; box-sizing: border-box; margin-bottom: 20px;
     }
-    #mainContent {
-      display: none;
-      width: 100%;
-      flex-direction: column;
-      align-items: center;
+    .modal-btn {
+      width: 100%; background: var(--primary); border: none; color: #000;
+      font-weight: bold; padding: 12px; border-radius: 4px; cursor: pointer;
     }
   </style>
 </head>
@@ -121,13 +142,39 @@
       <canvas id="radarChart"></canvas>
     </div>
 
-    <div class="grid" id="moduleGrid">
+    <button class="btn-briefing" onclick="startAIBriefing()">[ AI 전략 브리핑 (일간) 요청 ]</button>
+
+    <div class="grid" id="moduleGrid"></div>
+  </div>
+
+  <div class="modal-overlay" id="apiKeyModal">
+    <div class="modal-box">
+      <div class="modal-title">보안 인증 (API Key 설정)</div>
+      <div class="modal-content">
+        AI 전략 브리핑을 위한 Gemini 2.5 API 키를 입력해 주십시오.<br>
+        <span style="color:#888; font-size:11px;">(이 키는 서버에 전송되지 않으며 대표님의 기기 내부에만 안전하게 암호화되어 보관됩니다.)</span>
       </div>
+      <input type="text" id="apiKeyInput" class="modal-input" placeholder="AIzaSy...">
+      <button class="modal-btn" onclick="saveApiKey()">인증 및 저장</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="briefingModal">
+    <div class="modal-box">
+      <div class="modal-title">AI 전략 브리핑</div>
+      <div class="modal-content" id="briefingContent" style="max-height: 400px; overflow-y: auto;">
+        데이터 분석 중입니다...
+      </div>
+      <button class="modal-btn" onclick="closeBriefing()">확인 및 종료</button>
+    </div>
   </div>
 
   <script>
-    // 대표님의 구글 앱스 스크립트 API 주소 (통신망)
+    // 대표님의 구글 앱스 스크립트 API 주소
     const API_URL = "https://script.google.com/macros/s/AKfycbyuMPRaNEUCrr3FLjPDuQBgdOM1GTsPD8KG9g1-AN01NPv9k75VqIGSEXggUvavniyh/exec";
+    const API_STORAGE_KEY = 'hexagon_gemini_api_key';
+    
+    let currentLocksData = null; // AI 브리핑에 전달할 오늘 데이터
 
     const modules = [
       { id: 'strength', name: '근력 (STR)', file: 'strength.html' },
@@ -139,12 +186,9 @@
     ];
 
     window.onload = function() {
-      // 오늘 날짜 표시
       const now = new Date();
       const options = { year: 'numeric', month: 'short', day: 'numeric', weekday: 'short' };
       document.getElementById('dateDisplay').innerText = now.toLocaleDateString('ko-KR', options);
-
-      // 데이터 불러오기
       fetchData();
     };
 
@@ -156,6 +200,7 @@
             document.getElementById('loading').style.display = 'none';
             document.getElementById('mainContent').style.display = 'flex';
             
+            currentLocksData = data.locks; // 락 데이터 보관
             drawChart(data.chartData);
             renderButtons(data.locks);
           } else {
@@ -201,26 +246,91 @@
       grid.innerHTML = '';
 
       modules.forEach(mod => {
-        // 백엔드에서 받은 키 이름과 매칭 (독서는 intellect로 처리)
         let isLocked = locks[mod.id]; 
         let statusText = isLocked ? "[ 완료 및 잠금 ]" : "대기 중";
         let lockedClass = isLocked ? "locked" : "";
 
-        // 아직 개별 모듈 페이지(html)를 만들지 않았으므로 일단 클릭 시 알림만 띄움
         let a = document.createElement('a');
         a.className = `module-btn ${lockedClass}`;
-        // a.href = mod.file; // 3단계에서 각 모듈 이식 후 활성화
         a.onclick = function(e) {
             e.preventDefault();
-            alert("3단계에서 " + mod.name + " 모듈을 연결할 예정입니다.");
+            alert("다음 단계에서 " + mod.name + " 모듈 코드를 깃허브에 추가할 예정입니다.");
         };
 
-        a.innerHTML = `
-          <span>${mod.name}</span>
-          <span class="status-text">${statusText}</span>
-        `;
+        a.innerHTML = `<span>${mod.name}</span><span class="status-text">${statusText}</span>`;
         grid.appendChild(a);
       });
+    }
+
+    // --- AI 전략 브리핑 및 보안 로컬 스토리지 엔진 ---
+    function startAIBriefing() {
+      const savedKey = localStorage.getItem(API_STORAGE_KEY);
+      if (!savedKey) {
+        document.getElementById('apiKeyModal').style.display = 'flex';
+      } else {
+        executeAIBriefing(savedKey);
+      }
+    }
+
+    function saveApiKey() {
+      const keyInput = document.getElementById('apiKeyInput').value.trim();
+      if (keyInput === "") {
+        alert("API 키를 입력해 주십시오.");
+        return;
+      }
+      localStorage.setItem(API_STORAGE_KEY, keyInput);
+      document.getElementById('apiKeyModal').style.display = 'none';
+      executeAIBriefing(keyInput);
+    }
+
+    function executeAIBriefing(apiKey) {
+      document.getElementById('briefingModal').style.display = 'flex';
+      document.getElementById('briefingContent').innerHTML = "<span style='color:var(--primary);'>AI 서버와 직통 연결 중... 잠시만 대기해 주십시오.</span>";
+
+      // 훈련 상태 텍스트 변환
+      let statsText = "";
+      if(currentLocksData) {
+        statsText = `근력: ${currentLocksData.strength ? '완료' : '미완료'}, 매력: ${currentLocksData.charm ? '완료' : '미완료'}, 체력: ${currentLocksData.stamina ? '완료' : '미완료'}, 지력: ${currentLocksData.intellect ? '완료' : '미완료'}, 법력: ${currentLocksData.legal ? '완료' : '미완료'}, 활력: ${currentLocksData.vitality ? '유지중' : '실패'}`;
+      } else {
+        statsText = "데이터 동기화 대기중";
+      }
+
+      const prompt = `당신은 HEXAGON.OS의 수석 전략 AI 참모입니다. 사용자의 오늘 일간 훈련 데이터를 바탕으로 객관적이고 전략적인 브리핑을 제공하세요.
+      [오늘의 훈련 상태]
+      ${statsText}
+      
+      지시사항:
+      1. 현재 달성도에 대해 편향된 부분이나 누락된 부분을 정밀하게 지적하십시오.
+      2. 내일(또는 오늘 남은 시간)의 최우선 과제를 논리적으로 선정하여 제안하십시오.
+      3. 짧고 명확하며 예의 바른 비즈니스 어조로 작성하십시오. 이모티콘은 절대 사용하지 마십시오.
+      4. 사용자를 '대표님'이라고 호칭하십시오.`;
+
+      const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey;
+      const payload = { "contents": [{ "parts": [{"text": prompt}] }] };
+
+      fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.candidates && data.candidates.length > 0) {
+          // 줄바꿈 문자를 HTML <br>로 변환하여 출력
+          const textResponse = data.candidates[0].content.parts[0].text.replace(/\n/g, "<br>");
+          document.getElementById('briefingContent').innerHTML = textResponse;
+        } else if (data.error) {
+          document.getElementById('briefingContent').innerHTML = `<span style="color:var(--danger);">API 통신 거절: ${data.error.message}<br><br>API 키가 올바르지 않거나 만료되었습니다. 캐시를 지우고 다시 입력하십시오.</span>`;
+          localStorage.removeItem(API_STORAGE_KEY); // 오류 시 키 초기화
+        }
+      })
+      .catch(error => {
+        document.getElementById('briefingContent').innerHTML = `<span style="color:var(--danger);">네트워크 통신 오류가 발생했습니다.</span>`;
+      });
+    }
+
+    function closeBriefing() {
+      document.getElementById('briefingModal').style.display = 'none';
     }
   </script>
 </body>
