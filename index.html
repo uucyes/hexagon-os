@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>HEXAGON.OS 2.0</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root { 
+      --bg: #050505; 
+      --card: #141414; 
+      --text: #ffffff;
+      --primary: #00ffcc; 
+      --danger: #ff4444;
+      --locked: #333333;
+    }
+    body { 
+      background-color: var(--bg); 
+      color: var(--text); 
+      font-family: 'Segoe UI', sans-serif; 
+      margin: 0; 
+      padding: 15px; 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+    }
+    .header { 
+      width: 100%; 
+      max-width: 400px; 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center;
+      margin-bottom: 20px; 
+      border-bottom: 1px solid #333; 
+      padding-bottom: 15px; 
+    }
+    .logo { 
+      font-size: 18px; 
+      font-weight: 900; 
+      letter-spacing: 2px; 
+      color: var(--primary); 
+    }
+    .date-display {
+      font-size: 13px;
+      color: #aaa;
+    }
+    .chart-container { 
+      width: 100%; 
+      max-width: 400px; 
+      background: var(--card); 
+      border-radius: 12px; 
+      padding: 20px; 
+      box-sizing: border-box; 
+      margin-bottom: 20px;
+      border: 1px solid #222;
+      position: relative;
+    }
+    .grid { 
+      display: grid; 
+      grid-template-columns: 1fr 1fr; 
+      gap: 12px; 
+      width: 100%; 
+      max-width: 400px; 
+    }
+    .module-btn { 
+      background: var(--card); 
+      border: 1px solid #333; 
+      padding: 20px 10px; 
+      border-radius: 8px; 
+      text-align: center; 
+      font-weight: bold; 
+      color: var(--text); 
+      cursor: pointer; 
+      transition: all 0.2s;
+      text-decoration: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .module-btn:active { 
+      transform: scale(0.98); 
+    }
+    .module-btn.locked { 
+      border-color: var(--primary); 
+      color: var(--primary);
+      background: #0a1f1c;
+    }
+    .status-text {
+      font-size: 11px;
+      color: #888;
+    }
+    .locked .status-text {
+      color: var(--primary);
+    }
+    #loading {
+      color: var(--primary);
+      font-weight: bold;
+      text-align: center;
+      padding: 50px;
+    }
+    #mainContent {
+      display: none;
+      width: 100%;
+      flex-direction: column;
+      align-items: center;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="logo">HEXAGON.OS 2.0</div>
+    <div class="date-display" id="dateDisplay">Loading...</div>
+  </div>
+
+  <div id="loading">서버 통신망 연결 중...</div>
+
+  <div id="mainContent">
+    <div class="chart-container">
+      <canvas id="radarChart"></canvas>
+    </div>
+
+    <div class="grid" id="moduleGrid">
+      </div>
+  </div>
+
+  <script>
+    // 대표님의 구글 앱스 스크립트 API 주소 (통신망)
+    const API_URL = "https://script.google.com/macros/s/AKfycbyuMPRaNEUCrr3FLjPDuQBgdOM1GTsPD8KG9g1-AN01NPv9k75VqIGSEXggUvavniyh/exec";
+
+    const modules = [
+      { id: 'strength', name: '근력 (STR)', file: 'strength.html' },
+      { id: 'charm', name: '매력 (CHM)', file: 'charm.html' },
+      { id: 'stamina', name: '체력 (STA)', file: 'stamina.html' },
+      { id: 'intellect', name: '지력 (INT)', file: 'intellect.html' },
+      { id: 'legal', name: '법력 (LGL)', file: 'legal.html' },
+      { id: 'vitality', name: '활력 (VIT)', file: 'vitality.html' }
+    ];
+
+    window.onload = function() {
+      // 오늘 날짜 표시
+      const now = new Date();
+      const options = { year: 'numeric', month: 'short', day: 'numeric', weekday: 'short' };
+      document.getElementById('dateDisplay').innerText = now.toLocaleDateString('ko-KR', options);
+
+      // 데이터 불러오기
+      fetchData();
+    };
+
+    function fetchData() {
+      fetch(API_URL + "?action=getData")
+        .then(response => response.json())
+        .then(data => {
+          if(data.success) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'flex';
+            
+            drawChart(data.chartData);
+            renderButtons(data.locks);
+          } else {
+            document.getElementById('loading').innerText = "데이터 로드 실패: " + data.error;
+          }
+        })
+        .catch(error => {
+          document.getElementById('loading').innerText = "통신 오류 발생. 네트워크를 확인하십시오.";
+        });
+    }
+
+    function drawChart(chartData) {
+      const ctx = document.getElementById('radarChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'radar',
+        data: {
+          labels: ['근력', '매력', '체력', '독서', '활력', '법력'],
+          datasets: [{
+            data: chartData,
+            backgroundColor: 'rgba(0, 255, 204, 0.2)',
+            borderColor: '#00ffcc',
+            borderWidth: 2,
+            pointBackgroundColor: '#00ffcc',
+            pointRadius: 4
+          }]
+        },
+        options: {
+          scales: {
+            r: {
+              angleLines: { color: '#333' },
+              grid: { color: '#333' },
+              pointLabels: { color: '#aaa', font: { size: 12, weight: 'bold' } },
+              ticks: { display: false, min: 0, max: 100 }
+            }
+          },
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
+
+    function renderButtons(locks) {
+      const grid = document.getElementById('moduleGrid');
+      grid.innerHTML = '';
+
+      modules.forEach(mod => {
+        // 백엔드에서 받은 키 이름과 매칭 (독서는 intellect로 처리)
+        let isLocked = locks[mod.id]; 
+        let statusText = isLocked ? "[ 완료 및 잠금 ]" : "대기 중";
+        let lockedClass = isLocked ? "locked" : "";
+
+        // 아직 개별 모듈 페이지(html)를 만들지 않았으므로 일단 클릭 시 알림만 띄움
+        let a = document.createElement('a');
+        a.className = `module-btn ${lockedClass}`;
+        // a.href = mod.file; // 3단계에서 각 모듈 이식 후 활성화
+        a.onclick = function(e) {
+            e.preventDefault();
+            alert("3단계에서 " + mod.name + " 모듈을 연결할 예정입니다.");
+        };
+
+        a.innerHTML = `
+          <span>${mod.name}</span>
+          <span class="status-text">${statusText}</span>
+        `;
+        grid.appendChild(a);
+      });
+    }
+  </script>
+</body>
+</html>
