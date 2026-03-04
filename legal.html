@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>HEXAGON.OS - LEGAL MODULE</title>
+  <style>
+    :root { --p: #ffe600; --bg: #050505; --card: #141414; --danger: #ff4444; }
+    body { background: var(--bg); color: #fff; font-family: sans-serif; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
+    .header { width: 100%; max-width: 400px; display: flex; justify-content: space-between; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+    
+    .status-box { text-align: center; margin-bottom: 20px; width: 100%; max-width: 400px; }
+    .status-title { font-size: 12px; color: #888; letter-spacing: 2px; margin-bottom: 5px; }
+    .status-value { font-size: 20px; font-weight: bold; color: var(--p); letter-spacing: 1px; }
+    .status-weekend { color: var(--danger); }
+
+    .case-card { background: var(--card); border: 1px solid #333; border-left: 4px solid var(--p); padding: 18px; width: 100%; max-width: 400px; border-radius: 6px; margin-bottom: 15px; box-sizing: border-box; box-shadow: 0 4px 10px rgba(255, 230, 0, 0.05); }
+    .case-card.unsolved { border-left: 4px solid var(--danger); box-shadow: 0 4px 10px rgba(255, 68, 68, 0.1); }
+    
+    .case-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .case-subject { font-size: 18px; font-weight: bold; color: #fff; }
+    .case-day { font-size: 12px; background: #222; padding: 3px 8px; border-radius: 4px; color: #aaa; }
+    
+    .case-target { font-size: 14px; color: #ddd; margin-bottom: 15px; line-height: 1.4; }
+    
+    .btn-solve { background: transparent; color: var(--p); border: 1px solid var(--p); padding: 12px; width: 100%; border-radius: 4px; font-size: 14px; font-weight: bold; cursor: pointer; transition: 0.2s; letter-spacing: 1px; }
+    .btn-solve:active { background: rgba(255, 230, 0, 0.1); }
+    .btn-solve.danger-btn { color: var(--danger); border-color: var(--danger); }
+    .btn-solve.danger-btn:active { background: rgba(255, 68, 68, 0.1); }
+
+    .all-clear { text-align: center; color: var(--p); font-size: 16px; padding: 40px 20px; border: 1px dashed var(--p); border-radius: 8px; font-weight: bold; display: none; width: 100%; max-width: 400px; box-sizing: border-box; }
+    
+    /* 잠금(Lock) 화면 스타일 */
+    .lock-screen { display: none; flex-direction: column; align-items: center; justify-content: center; width: 100%; max-width: 400px; padding: 40px 20px; border: 1px dashed var(--p); border-radius: 8px; text-align: center; box-sizing: border-box; }
+    .lock-title { font-size: 18px; font-weight: bold; color: var(--p); margin-bottom: 10px; }
+    .lock-msg { font-size: 14px; color: #aaa; line-height: 1.5; margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <b style="letter-spacing:2px; color:var(--p);">LEGAL.OS (법력)</b>
+    <span onclick="goHome()" style="color:#888; cursor:pointer;">[ EXIT ]</span>
+  </div>
+  
+  <div id="loading" style="color:var(--p); padding:50px; font-weight:bold; text-align:center;">LOADING CASE FILES...</div>
+  
+  <div id="lockScreen" class="lock-screen">
+    <div class="lock-title">[ 오늘의 재판 완료 ]</div>
+    <div class="lock-msg">오늘 할당된 사건(학습)이 이미 시스템에 안전하게 기록되었습니다.<br>내일 다시 방문해 주십시오.</div>
+    <button style="background:var(--p); color:#000; padding:10px 20px; border:none; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="goHome()">메인으로 복귀</button>
+  </div>
+
+  <div id="main" style="display:none; width:100%; max-width:400px; flex-direction:column; align-items:center;">
+    
+    <div class="status-box">
+      <div class="status-title">CURRENT STATUS</div>
+      <div class="status-value" id="statusText">정규 재판 진행 중</div>
+    </div>
+
+    <div id="caseContainer" style="width: 100%;"></div>
+    <div id="allClearMsg" class="all-clear">할당된 모든 사건(학습)이 해결되었습니다.<br>법력 수치가 상승했습니다.</div>
+    
+  </div>
+
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbyuMPRaNEUCrr3FLjPDuQBgdOM1GTsPD8KG9g1-AN01NPv9k75VqIGSEXggUvavniyh/exec";
+
+    window.onload = function() {
+      fetch(API_URL + "?action=getData")
+        .then(response => response.json())
+        .then(d => {
+          if (d.locks && d.locks.legal) {
+            document.getElementById('lockScreen').style.display = 'flex';
+            document.getElementById('loading').style.display = 'none';
+            return; 
+          }
+
+          const isWeekend = (d.day === '토요일' || d.day === '일요일');
+          
+          document.getElementById('statusText').innerText = isWeekend ? "⚠️ 미제 사건 보충 심리" : "정규 재판 ( " + d.day + " )";
+          if(isWeekend) document.getElementById('statusText').classList.add('status-weekend');
+
+          const container = document.getElementById('caseContainer');
+          
+          if (!d.legal || d.legal.length === 0) {
+            document.getElementById('allClearMsg').style.display = 'block';
+          } else {
+            d.legal.forEach((item, index) => {
+              const isUnsolved = isWeekend; 
+              
+              const card = document.createElement('div');
+              card.className = 'case-card' + (isUnsolved ? ' unsolved' : '');
+              card.id = 'case-' + index;
+              
+              card.innerHTML = `
+                <div class="case-header">
+                  <div class="case-subject">${item[2]}</div>
+                  <div class="case-day">${item[1]}</div>
+                </div>
+                <div class="case-target">${item[3]}</div>
+                <button class="btn-solve ${isUnsolved ? 'danger-btn' : ''}" 
+                        onclick="solveCase(${index}, '${item[2]}', ${item[5]}, ${item[6]})">
+                  [ 사건 해결 및 판결문 작성 완료 ]
+                </button>
+              `;
+              container.appendChild(card);
+            });
+          }
+          
+          document.getElementById('loading').style.display = 'none';
+          document.getElementById('main').style.display = 'flex';
+        })
+        .catch(err => {
+          document.getElementById('loading').innerText = "통신 오류가 발생했습니다."; 
+        });
+    };
+
+    function solveCase(index, subject, row, col) {
+      const btn = document.querySelector(`#case-${index} .btn-solve`);
+      btn.innerText = "처리 중...";
+      btn.disabled = true;
+
+      document.body.style.cursor = 'wait';
+
+      const payload = {
+        category: '법력', 
+        content: subject + ' 학습 완료', 
+        value: 1, 
+        feedback: '사건해결',
+        targetSheet: '연간_법학일정',
+        targetRow: row,
+        targetCol: col
+      };
+
+      fetch(API_URL, {
+        method: "POST",
+        body: JSON.stringify({ action: "logActivity", payload: payload })
+      })
+      .then(response => response.json())
+      .then(data => {
+        document.body.style.cursor = 'default';
+        if(data.success) {
+          document.getElementById(`case-${index}`).style.display = 'none';
+          
+          const remaining = Array.from(document.querySelectorAll('.case-card')).filter(c => c.style.display !== 'none');
+          if (remaining.length === 0) {
+            document.getElementById('allClearMsg').style.display = 'block';
+            showCustomModal("재판 승소", "할당된 모든 사건(학습)이 해결되었습니다.<br>법력 수치가 상승했습니다. 메인으로 복귀합니다.", false, goHome);
+          } else {
+            showCustomModal("사건 해결", `[${subject}] 판결문 작성이 완료되었습니다.<br>다음 사건을 진행해 주십시오.`, false, null);
+          }
+        } else {
+          showCustomModal("오류", "사건 해결 기록 실패: " + data.error, false);
+          btn.innerText = "[ 사건 해결 및 판결문 작성 완료 ]";
+          btn.disabled = false;
+        }
+      })
+      .catch(err => {
+        document.body.style.cursor = 'default';
+        showCustomModal("오류", "통신 문제로 기록을 저장하지 못했습니다.", false);
+        btn.innerText = "[ 사건 해결 및 판결문 작성 완료 ]";
+        btn.disabled = false;
+      });
+    }
+
+    function goHome() {
+      window.location.href = 'index.html';
+    }
+
+    // ── 자체 팝업 모달(Custom Modal) 엔진 ──
+    function showCustomModal(title, msg, isConfirm, onConfirm) {
+      const overlay = document.createElement('div');
+      overlay.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:9999;display:flex;justify-content:center;align-items:center;";
+      const box = document.createElement('div');
+      box.style.cssText = "background:#141414;border:1px solid #333;border-top:4px solid var(--p);padding:25px;border-radius:8px;width:80%;max-width:320px;text-align:center;box-shadow:0 0 20px rgba(0,0,0,0.5);";
+      
+      box.innerHTML = `
+        <div style="font-size:18px;font-weight:bold;color:var(--p);margin-bottom:15px;letter-spacing:1px;">${title}</div>
+        <div style="font-size:14px;color:#ccc;margin-bottom:25px;line-height:1.6;word-break:keep-all;">${msg}</div>
+        <div style="display:flex;gap:10px;justify-content:center;">
+          ${isConfirm ? `<button id="btnCancel" style="flex:1;background:transparent;border:1px solid #666;color:#ccc;padding:12px;border-radius:4px;font-weight:bold;cursor:pointer;">취소</button>` : ''}
+          <button id="btnOk" style="flex:1;background:var(--p);border:none;color:#000;font-weight:bold;padding:12px;border-radius:4px;cursor:pointer;">확인</button>
+        </div>
+      `;
+      overlay.appendChild(box); document.body.appendChild(overlay);
+
+      document.getElementById('btnOk').onclick = () => {
+        document.body.removeChild(overlay); if(onConfirm) onConfirm();
+      };
+      if(isConfirm) {
+        document.getElementById('btnCancel').onclick = () => document.body.removeChild(overlay);
+      }
+    }
+  </script>
+</body>
+</html>
