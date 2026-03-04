@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>HEXAGON.OS - E-SPEAKING</title>
+  <style>
+    :root { --p: #cc00ff; --bg: #050505; --card: #141414; --danger: #ff4444; --success: #00ffcc; }
+    body { background: var(--bg); color: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
+    .header { width: 100%; max-width: 420px; display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+    
+    .shadow-zone, .sparring-zone { background: var(--card); border: 1px solid #333; border-radius: 6px; padding: 20px; width: 100%; max-width: 420px; box-sizing: border-box; margin-bottom: 20px; }
+    .shadow-zone { border-top: 4px solid #ffaa00; }
+    .sparring-zone { border-top: 4px solid var(--p); display: none; }
+
+    .section-title { font-size: 13px; font-weight: bold; margin-bottom: 15px; letter-spacing: 1px; }
+    .target-text { font-size: 18px; font-weight: 900; margin-bottom: 5px; color: #fff; }
+    .target-voca { font-size: 13px; color: #aaa; margin-bottom: 15px; }
+    
+    .progress-container { width: 100%; background: #222; border-radius: 10px; height: 10px; margin-bottom: 10px; overflow: hidden; }
+    .progress-bar { height: 100%; background: #ffaa00; width: 0%; transition: width 0.3s; }
+    .count-text { text-align: right; font-size: 12px; font-weight: bold; color: #ffaa00; margin-bottom: 15px; }
+
+    .btn { width: 100%; padding: 14px; border-radius: 6px; border: none; font-weight: bold; font-size: 15px; cursor: pointer; margin-bottom: 10px; display: flex; justify-content: center; align-items: center; gap: 8px; transition: all 0.2s; }
+    .btn-listen { background: #333; color: #ffaa00; }
+    
+    .btn-record { background: #ffaa00; color: #000; }
+    .btn-record.recording { background: var(--danger); color: #fff; animation: pulse 1.5s infinite; }
+    
+    .btn-record-chat { background: var(--p); color: #000; }
+    .btn-record-chat.recording { background: var(--danger); color: #fff; animation: pulse 1.5s infinite; }
+    
+    .btn-log { background: transparent; border: 1px solid var(--p); color: var(--p); }
+
+    .feedback-box { background: #000; border: 1px dashed #555; padding: 12px; border-radius: 4px; font-size: 13px; color: #aaa; min-height: 40px; margin-bottom: 15px; word-break: keep-all; line-height: 1.4; }
+    .pass { color: var(--success); font-weight: bold; }
+    .fail { color: var(--danger); }
+
+    .chat-container { height: 300px; background: #050505; border: 1px solid #333; border-radius: 6px; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 12px; margin-bottom: 15px; }
+    .bubble { max-width: 85%; padding: 12px; border-radius: 8px; font-size: 14px; line-height: 1.5; }
+    .ai { align-self: flex-start; background: #1a1a1a; border-left: 3px solid var(--p); }
+    .user { align-self: flex-end; background: #333; color: #ffaa00; }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(0.98); box-shadow: 0 0 10px var(--danger); }
+      100% { transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <b style="letter-spacing:2px; color:var(--p);">E-SPEAKING.SYS</b>
+    <span onclick="goHome()" style="color:#888; cursor:pointer;">[ EXIT ]</span>
+  </div>
+  
+  <div id="loading" style="color:var(--p); padding:50px; font-weight:bold; text-align:center;">LOADING MODULE...</div>
+
+  <div id="main" style="display:none; width:100%; max-width:420px; flex-direction:column; align-items:center;">
+    
+    <div class="shadow-zone" id="shadowZone">
+      <div class="section-title" style="color:#ffaa00;">[ STEP 1 ] 근육 각인 섀도잉 (목표: 1회)</div>
+      <div class="target-text" id="targetSentence">Loading...</div>
+      <div class="target-voca" id="targetVoca"></div>
+      
+      <div class="progress-container"><div class="progress-bar" id="progressBar"></div></div>
+      <div class="count-text" id="countText">0 / 1 성공</div>
+
+      <div class="feedback-box" id="feedbackBox">하단의 말하기 버튼을 눌러 발음을 시작하고, 완료 후 다시 눌러 전송하십시오.</div>
+      
+      <button class="btn btn-listen" onclick="speakTarget()">[ 원어민 발음 듣기 ]</button>
+      <button class="btn btn-record" id="btnMicShadow" onclick="toggleRecording(1)">[ 말하기 시작 ]</button>
+    </div>
+
+    <div class="sparring-zone" id="sparringZone">
+      <div class="section-title" style="color:var(--p);">[ STEP 2 ] 실전 상황 롤플레잉</div>
+      <div style="font-size:12px; color:#aaa; margin-bottom:15px; line-height:1.4;">
+        방금 연습한 문장을 응용할 수 있는 상황입니다. 말하기 버튼을 눌러 음성으로 대답하십시오.
+      </div>
+      
+      <div class="chat-container" id="chatHistory"></div>
+      
+      <button class="btn btn-record-chat" id="btnMicChat" onclick="toggleRecording(2)">[ 대답 말하기 시작 ]</button>
+      <button class="btn btn-log" style="margin-top:15px;" onclick="saveEnglishLog()">[ 회화 훈련 전체 완료 ]</button>
+    </div>
+
+  </div>
+
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbyuMPRaNEUCrr3FLjPDuQBgdOM1GTsPD8KG9g1-AN01NPv9k75VqIGSEXggUvavniyh/exec";
+    const API_STORAGE_KEY = 'hexagon_gemini_api_key';
+
+    const TARGET_REPS = 1; 
+    let currentReps = 0;
+    let targetSentence = "";
+    let targetRow = null;
+    let targetCol = null;
+    let fullChatHistory = ""; 
+
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let isRecording = false;
+    let currentStep = 1;
+
+    window.onload = function() {
+      fetch(API_URL + "?action=getData")
+        .then(response => response.json())
+        .then(res => {
+          if(res.success && res.english && res.english.length > 0) {
+            const eng = res.english;
+            targetCol = eng[eng.length - 1];
+            targetRow = eng[eng.length - 2];
+            targetSentence = eng[4]; 
+            
+            document.getElementById('targetSentence').innerText = targetSentence;
+            document.getElementById('targetVoca').innerText = `의미: ${eng[2]} / 포인트: ${eng[5] || '정확한 억양'}`;
+            
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('main').style.display = 'flex';
+          } else {
+            document.getElementById('loading').innerText = "할당된 회화 진도가 없습니다."; 
+          }
+        })
+        .catch(error => {
+          document.getElementById('loading').innerText = "통신 오류 발생. 네트워크를 확인하십시오.";
+        });
+    };
+
+    function speakTarget() {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel(); 
+        const u = new SpeechSynthesisUtterance(targetSentence);
+        u.lang = 'en-US'; 
+        u.rate = 0.9;
+        window.speechSynthesis.speak(u);
+      }
+    }
+
+    function checkApiKey() {
+      const savedKey = localStorage.getItem(API_STORAGE_KEY);
+      if (!savedKey) {
+        alert("API 키가 설정되지 않았습니다. 메인 화면의 'AI 전략 브리핑'에서 키를 먼저 등록해 주십시오.");
+        return null;
+      }
+      return savedKey;
+    }
+
+    async function toggleRecording(step) {
+      if (!checkApiKey()) return;
+
+      currentStep = step;
+      const btnId = step === 1 ? 'btnMicShadow' : 'btnMicChat';
+      const btn = document.getElementById(btnId);
+
+      if (!isRecording) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          mediaRecorder = new MediaRecorder(stream);
+          audioChunks = [];
+
+          mediaRecorder.ondataavailable = e => {
+            if (e.data.size > 0) audioChunks.push(e.data);
+          };
+
+          mediaRecorder.onstop = () => {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            processAudioBlob(audioBlob);
+            stream.getTracks().forEach(track => track.stop());
+          };
+
+          mediaRecorder.start();
+          isRecording = true;
+          btn.innerText = "[ 듣고 있습니다. 다시 누르면 전송 ]";
+          btn.classList.add('recording');
+
+        } catch (err) {
+          alert("마이크 접근이 차단되었습니다. 스마트폰 브라우저 설정에서 마이크 권한을 허용해 주십시오.");
+        }
+      } else {
+        mediaRecorder.stop();
+        isRecording = false;
+        btn.innerText = "[ 데이터 전송 및 분석 중... ]";
+        btn.classList.remove('recording');
+        btn.disabled = true;
+      }
+    }
+
+    function processAudioBlob(blob) {
+      const reader = new FileReader();
+      reader.readAsDataURL(blob);
+      reader.onloadend = () => {
+        const base64Data = reader.result;
+        const mimeType = blob.type; 
+
+        if (currentStep === 1) {
+          verifyAudioShadowing(base64Data, mimeType);
+        } else {
+          sendAudioChat(base64Data, mimeType);
+        }
+      };
+    }
+
+    function callGeminiAPI(prompt, base64Data, mimeType, callback) {
+      const apiKey = checkApiKey();
+      if (!apiKey) return;
+
+      const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey;
+      
+      let payload = {};
+      if (base64Data) {
+        const cleanBase64 = base64Data.split(',')[1];
+        payload = {
+          "contents": [{
+            "parts": [
+              {"text": prompt},
+              { "inline_data": { "mime_type": mimeType || "audio/webm", "data": cleanBase64 } }
+            ]
+          }]
+        };
+      } else {
+        payload = { "contents": [{ "parts": [{"text": prompt}] }] };
+      }
+
+      fetch(url, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.candidates && data.candidates.length > 0) {
+          callback(data.candidates[0].content.parts[0].text);
+        } else {
+          alert("AI 응답 오류: " + (data.error ? data.error.message : "알 수 없는 오류"));
+          callback(null);
+        }
+      })
+      .catch(err => {
+        alert("통신 오류가 발생했습니다.");
+        callback(null);
+      });
+    }
+
+    function verifyAudioShadowing(base64Data, mimeType) {
+      const prompt = `당신은 엄격한 원어민 발음 코치입니다. 첨부된 음성 파일을 듣고, 타겟 문장인 "${targetSentence}"와 일치하게 발음했는지 평가하십시오. 
+      완벽히 일치하거나 사소한 억양 차이만 있다면 무조건 첫 줄에 '[PASS]'라고 적으십시오. 
+      아예 다른 단어를 말했거나 인식이 불가능하면 첫 줄에 '[FAIL]'이라고 적으십시오.
+      두 번째 줄에는 사용자가 실제로 발음한 문장을 영어로 받아쓰기 하여 "인식결과: ..." 형태로 적어주십시오.`;
+
+      callGeminiAPI(prompt, base64Data, mimeType, response => {
+        const btn = document.getElementById('btnMicShadow');
+        btn.innerText = "[ 말하기 시작 ]";
+        btn.disabled = false;
+        
+        if (!response) return;
+
+        const feedback = document.getElementById('feedbackBox');
+        if (response.indexOf('[PASS]') !== -1) {
+          currentReps++;
+          const heardText = response.replace('[PASS]', '').trim();
+          feedback.innerHTML = `<span class="pass">성공! (${currentReps}/${TARGET_REPS})</span><br><span style="color:#aaa; font-size:11px;">${heardText}</span>`;
+          updateProgress();
+        } else {
+          const heardText = response.replace('[FAIL]', '').trim();
+          feedback.innerHTML = `<span class="fail">불일치. 다시 시도하십시오.</span><br><span style="color:#aaa; font-size:11px;">${heardText}</span>`;
+        }
+      });
+    }
+
+    function updateProgress() {
+      const percentage = (currentReps / TARGET_REPS) * 100;
+      document.getElementById('progressBar').style.width = percentage + '%';
+      document.getElementById('countText').innerText = `${currentReps} / ${TARGET_REPS} 성공`;
+
+      if (currentReps >= TARGET_REPS) {
+        document.getElementById('btnMicShadow').style.display = 'none';
+        document.getElementById('feedbackBox').innerHTML = `<span class="pass">목표 횟수 달성 완료. 실전 롤플레잉을 시작합니다.</span>`;
+        unlockStep2();
+      }
+    }
+
+    function unlockStep2() {
+      document.getElementById('sparringZone').style.display = 'block';
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+      
+      const chatHistory = document.getElementById('chatHistory');
+      chatHistory.innerHTML += `<div class="bubble ai" style="color:#aaa;" id="loadingInit">상황을 설정하고 있습니다...</div>`;
+      
+      const roleplayPrompt = `당신은 원어민 파트너입니다. 사용자가 연습한 문장은 "${targetSentence}" 입니다. 이 문장을 대답으로 활용할 수 있는 구체적인 일상 상황(공항, 식당, 미팅 등)을 하나 설정하고, 먼저 상황에 맞춰 짧게 영어로 질문을 던지세요. 한국어 해석 없이 영어 대사만 한 문장으로 출력하세요.`;
+      
+      callGeminiAPI(roleplayPrompt, null, null, response => {
+        document.getElementById('loadingInit').remove();
+        if(!response) return;
+        addChatBubble('ai', response);
+        speakText(response); 
+        fullChatHistory += `System: ${roleplayPrompt}\nAI: ${response}\n`;
+      });
+    }
+
+    function sendAudioChat(base64Data, mimeType) {
+      const prompt = `이전 대화기록:\n${fullChatHistory}\n\n첨부된 음성을 듣고, 위 대화 흐름에 맞춰 원어민처럼 영어로 리액션하고 대화를 이어가십시오. 
+      반드시 첫 줄에는 사용자가 음성으로 말한 내용을 "[인식결과: 사용자가 한 말]" 형태로 적고, 두 번째 줄부터 당신의 대답을 적으십시오. 사용자의 문법이나 표현이 어색했다면 "[교정: 올바른 표현]"을 대답 마지막에 덧붙이십시오.`;
+
+      callGeminiAPI(prompt, base64Data, mimeType, response => {
+        const btn = document.getElementById('btnMicChat');
+        btn.innerText = "[ 대답 말하기 시작 ]";
+        btn.disabled = false;
+
+        if(!response) return;
+
+        let aiReply = response;
+        let recognizedText = "";
+        
+        const recMatch = response.match(/\[인식결과:.*?\]/);
+        if(recMatch) {
+          recognizedText = recMatch[0].replace('[인식결과:', '').replace(']', '').trim();
+          aiReply = response.replace(recMatch[0], '').trim();
+          addChatBubble('user', recognizedText); 
+          fullChatHistory += `User: ${recognizedText}\n`;
+        } else {
+          addChatBubble('user', "[음성 전송 완료]");
+        }
+        
+        addChatBubble('ai', aiReply);
+        speakText(aiReply.replace(/\[교정:.*?\]/g, '')); 
+        fullChatHistory += `AI: ${aiReply}\n`;
+      });
+    }
+
+    function addChatBubble(role, text) {
+      const chatHistory = document.getElementById('chatHistory');
+      let formattedText = text;
+      
+      if (role === 'ai') {
+        const match = text.match(/\[교정:.*?\]/g);
+        if(match) {
+          const correction = match[0];
+          formattedText = text.replace(correction, '').trim();
+          formattedText += `<br><span style="color:var(--success); font-size:12px; display:block; margin-top:8px; border-top:1px dashed #555; padding-top:5px;">${correction}</span>`;
+        }
+      }
+
+      chatHistory.innerHTML += `<div class="bubble ${role}">${formattedText}</div>`;
+      chatHistory.scrollTop = chatHistory.scrollHeight;
+    }
+
+    function saveEnglishLog() {
+      document.body.style.cursor = 'wait';
+      
+      const payload = {
+        category: '매력', 
+        content: '영어 회화 (실시간 스트리밍 음성 통신)', 
+        value: 1, 
+        feedback: '완료',
+        targetSheet: '연간_영어회화',
+        targetRow: targetRow,
+        targetCol: targetCol
+      };
+
+      fetch(API_URL, {
+        method: "POST",
+        body: JSON.stringify({ action: "logActivity", payload: payload })
+      })
+      .then(response => response.json())
+      .then(data => {
+        document.body.style.cursor = 'default';
+        if(data.success) {
+          alert("시스템에 실적이 기록되었습니다.");
+          goHome();
+        } else {
+          alert("기록 중 오류가 발생했습니다: " + data.error);
+        }
+      })
+      .catch(error => {
+        document.body.style.cursor = 'default';
+        alert("통신 오류로 실적을 기록하지 못했습니다.");
+      });
+    }
+
+    function goHome() {
+      // 깃허브 동일 저장소 내의 메인 페이지로 이동합니다.
+      window.location.href = 'index.html';
+    }
+  </script>
+</body>
+</html>
