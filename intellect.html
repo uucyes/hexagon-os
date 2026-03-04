@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>HEXAGON.OS - INTELLECT MODULE</title>
+  <style>
+    :root { --p: #33ccff; --bg: #050505; --card: #141414; --danger: #ff4444; }
+    body { background: var(--bg); color: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
+    .header { width: 100%; max-width: 400px; display: flex; justify-content: space-between; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+
+    .card { background: var(--card); border: 1px solid #333; border-top: 4px solid var(--p); padding: 20px; width: 100%; max-width: 400px; border-radius: 8px; margin-bottom: 20px; box-sizing: border-box; box-shadow: 0 4px 15px rgba(51, 204, 255, 0.1); }
+
+    .date-badge { font-size: 14px; color: #000; background: var(--p); padding: 5px 10px; border-radius: 4px; font-weight: bold; display: inline-block; margin-bottom: 15px; letter-spacing: 1px; }
+
+    .input-group { margin-bottom: 15px; text-align: left; }
+    .input-label { font-size: 12px; color: #aaa; margin-bottom: 5px; display: flex; justify-content: space-between; font-weight: bold; }
+    input[type="text"], textarea { width: 100%; background: #000; border: 1px solid #444; color: #fff; padding: 12px; border-radius: 6px; box-sizing: border-box; font-family: inherit; font-size: 14px; }
+    input[type="text"]:focus, textarea:focus { outline: none; border-color: var(--p); }
+    textarea { resize: vertical; min-height: 100px; }
+
+    .checkbox-group { display: flex; align-items: center; margin-bottom: 15px; background: #1a1a1a; padding: 10px; border-radius: 6px; border: 1px dashed #444; cursor: pointer; }
+    .checkbox-group input { margin-right: 10px; transform: scale(1.2); accent-color: var(--p); }
+    .checkbox-label { font-size: 14px; color: #fff; font-weight: bold; }
+
+    .btn-submit { background: var(--p); color: #000; border: none; padding: 16px; width: 100%; max-width: 400px; border-radius: 6px; font-size: 16px; font-weight: 900; cursor: pointer; transition: 0.2s; letter-spacing: 1px; box-shadow: 0 0 10px rgba(51, 204, 255, 0.2); }
+    .btn-submit:active { transform: scale(0.98); }
+    .btn-submit:disabled { background: #444; color: #888; cursor: not-allowed; box-shadow: none; }
+    
+    #loading { color: var(--p); font-weight: bold; text-align: center; padding: 20px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <b style="letter-spacing:2px; color:var(--p);">INTELLECT.OS (독서)</b>
+    <span onclick="goHome()" style="color:#888; cursor:pointer;">[ EXIT ]</span>
+  </div>
+
+  <div id="loading">서버에서 현재 독서 진도를 확인 중입니다...</div>
+
+  <div id="main" style="width:100%; max-width:400px; flex-direction:column; align-items:center; display:none;">
+    <div class="card">
+      <div class="date-badge" id="todayDate">오늘의 독서 기록</div>
+
+      <div class="input-group">
+        <div class="input-label">읽은 도서명</div>
+        <input type="text" id="bookTitleInput" placeholder="예: 편안함의 습격" oninput="updateCounts()">
+      </div>
+
+      <div class="input-group">
+        <div class="input-label">저자명</div>
+        <input type="text" id="bookAuthorInput" placeholder="예: 마이클 이스터" oninput="updateCounts()">
+      </div>
+
+      <div class="input-group">
+        <div class="input-label">
+          <span>가장 좋았던 부분 (핵심 요약 / 자유 분량)</span>
+        </div>
+        <textarea id="quoteInput" placeholder="인상 깊은 문장이나 핵심 요약을 자유롭게 입력하세요." oninput="updateCounts()"></textarea>
+      </div>
+
+      <label class="checkbox-group">
+        <input type="checkbox" id="finishCheck" onchange="toggleReview()">
+        <span class="checkbox-label">오늘 이 책을 완독했습니다 (서평 작성)</span>
+      </label>
+
+      <div class="input-group" id="reviewGroup" style="display: none;">
+        <div class="input-label">
+          <span>완독 서평 (자유 분량)</span>
+        </div>
+        <textarea id="reviewInput" placeholder="이 책에 대한 감상평을 자유롭게 남겨주세요." oninput="updateCounts()"></textarea>
+      </div>
+    </div>
+
+    <button class="btn-submit" id="submitBtn" onclick="submitReading()" disabled>[ 독서 일지 기록 및 완료 ]</button>
+  </div>
+
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbyuMPRaNEUCrr3FLjPDuQBgdOM1GTsPD8KG9g1-AN01NPv9k75VqIGSEXggUvavniyh/exec";
+    
+    let targetRow = null;
+    let targetCol = 7; // 구글 시트 '연간_독서' 탭의 상태 기록 컬럼 (G열 = 7번째 열)
+
+    window.onload = function() {
+      const now = new Date();
+      const dateStr = now.getFullYear() + '년 ' + (now.getMonth() + 1) + '월 ' + now.getDate() + '일 기록';
+      document.getElementById('todayDate').innerText = dateStr;
+
+      // 1. 서버 통신을 통해 현재 읽고 있는 책 데이터 가져오기
+      fetch(API_URL + "?action=getData")
+        .then(response => response.json())
+        .then(d => {
+          document.getElementById('loading').style.display = 'none';
+          document.getElementById('main').style.display = 'flex';
+
+          if (d.success && d.reading) {
+            const rData = d.reading;
+            targetRow = rData[rData.length - 1]; // 백엔드에서 배열 마지막에 추가해준 행 번호
+            
+            // 시트의 2번째 열(B열)이 도서명, 3번째 열(C열)이 저자라고 가정하고 자동 입력
+            if (rData[1]) document.getElementById('bookTitleInput').value = rData[1];
+            if (rData[2]) document.getElementById('bookAuthorInput').value = rData[2];
+            
+            updateCounts();
+          }
+        })
+        .catch(err => {
+          document.getElementById('loading').innerText = "서버 통신에 실패했습니다. 수동으로 입력해 주십시오.";
+          document.getElementById('main').style.display = 'flex';
+        });
+    };
+
+    function toggleReview() {
+      const isChecked = document.getElementById('finishCheck').checked;
+      document.getElementById('reviewGroup').style.display = isChecked ? 'block' : 'none';
+      updateCounts();
+    }
+
+    function updateCounts() {
+      const title = document.getElementById('bookTitleInput').value.trim();
+      const author = document.getElementById('bookAuthorInput').value.trim();
+      const quote = document.getElementById('quoteInput').value.trim();
+      const review = document.getElementById('reviewInput').value.trim();
+      
+      let isValid = (title.length > 0 && author.length > 0 && quote.length > 0);
+      
+      if (document.getElementById('finishCheck').checked) {
+        if (review.length === 0) isValid = false;
+      }
+
+      document.getElementById('submitBtn').disabled = !isValid;
+    }
+
+    function submitReading() {
+      const btn = document.getElementById('submitBtn');
+      btn.innerText = "기록 중...";
+      btn.disabled = true;
+      document.body.style.cursor = 'wait';
+
+      const isFinished = document.getElementById('finishCheck').checked;
+
+      const readingData = {
+        bookTitle: document.getElementById('bookTitleInput').value.trim(),
+        bookAuthor: document.getElementById('bookAuthorInput').value.trim(),
+        quote: document.getElementById('quoteInput').value.trim(),
+        isFinished: isFinished ? '완독' : '진행중',
+        review: document.getElementById('reviewInput').value.trim()
+      };
+
+      const payload = {
+        category: '독서', 
+        content: `[독서] ${readingData.bookTitle} (${readingData.bookAuthor})`, 
+        value: 1, 
+        feedback: JSON.stringify(readingData)
+      };
+
+      // 2. 완독 체크를 했고, 서버에서 받아온 행 번호(targetRow)가 존재할 경우 타겟 좌표 추가
+      if (isFinished && targetRow) {
+        payload.targetSheet = '연간_독서';
+        payload.targetRow = targetRow;
+        payload.targetCol = targetCol;
+      }
+
+      fetch(API_URL, {
+        method: "POST",
+        body: JSON.stringify({ action: "logActivity", payload: payload })
+      })
+      .then(response => response.json())
+      .then(data => {
+        document.body.style.cursor = 'default';
+        if(data.success) {
+          let msg = "독서 일지가 성공적으로 데이터베이스에 누적되었습니다.";
+          if(isFinished) msg += "<br><strong>연간 독서 시트에도 [완료] 처리가 반영되었습니다.</strong>";
+          showCustomModal("기록 완료", msg, false, goHome);
+        } else {
+          showCustomModal("오류", "기록 실패: " + data.error, false);
+          btn.innerText = "[ 독서 일지 기록 및 완료 ]";
+          btn.disabled = false;
+        }
+      })
+      .catch(err => {
+        document.body.style.cursor = 'default';
+        showCustomModal("오류", "통신 문제로 기록을 저장하지 못했습니다.", false);
+        btn.innerText = "[ 독서 일지 기록 및 완료 ]";
+        btn.disabled = false;
+      });
+    }
+
+    function goHome() {
+      window.location.href = 'index.html';
+    }
+
+    function showCustomModal(title, msg, isConfirm, onConfirm) {
+      const overlay = document.createElement('div');
+      overlay.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:9999;display:flex;justify-content:center;align-items:center;";
+      const box = document.createElement('div');
+      box.style.cssText = "background:#141414;border:1px solid #333;border-top:4px solid var(--p);padding:25px;border-radius:8px;width:80%;max-width:320px;text-align:center;box-shadow:0 0 20px rgba(0,0,0,0.5);";
+      
+      box.innerHTML = `
+        <div style="font-size:18px;font-weight:bold;color:var(--p);margin-bottom:15px;letter-spacing:1px;">${title}</div>
+        <div style="font-size:14px;color:#ccc;margin-bottom:25px;line-height:1.6;word-break:keep-all;">${msg}</div>
+        <div style="display:flex;gap:10px;justify-content:center;">
+          ${isConfirm ? '<button id="btnCancel" style="flex:1;background:transparent;border:1px solid #666;color:#ccc;padding:12px;border-radius:4px;font-weight:bold;cursor:pointer;">취소</button>' : ''}
+          <button id="btnOk" style="flex:1;background:var(--p);border:none;color:#000;font-weight:bold;padding:12px;border-radius:4px;cursor:pointer;">확인</button>
+        </div>
+      `;
+      overlay.appendChild(box); document.body.appendChild(overlay);
+
+      document.getElementById('btnOk').onclick = () => {
+        document.body.removeChild(overlay); if(onConfirm) onConfirm();
+      };
+      if(isConfirm) {
+        document.getElementById('btnCancel').onclick = () => document.body.removeChild(overlay);
+      }
+    }
+  </script>
+</body>
+</html>
