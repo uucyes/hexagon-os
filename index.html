@@ -4,6 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>HEXAGON.OS - COMMAND CENTER</title>
+  <link rel="manifest" href="manifest.json">
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('Service Worker Registered'))
+          .catch(err => console.log('Service Worker Registration Failed', err));
+      });
+    }
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root { --p: #00ffcc; --bg: #050505; --card: #141414; --border: #333; --text: #fff; --mute: #666; }
