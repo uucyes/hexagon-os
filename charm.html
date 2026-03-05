@@ -45,7 +45,7 @@
         .answer { font-size: 1.2rem; color: var(--neon-mint); display: none; margin-bottom: 20px; word-break: keep-all; line-height: 1.4; }
         .accuracy { font-size: 0.95rem; color: var(--neon-magenta); margin-top: 15px; display: none; padding: 10px; background: #000; border: 1px dashed var(--neon-magenta); border-radius: 5px; }
         
-        .controls { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 30px; }
+        .controls { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 30px; width: 100%; }
         
         button {
             background: transparent; color: var(--neon-mint); border: 1px solid var(--neon-mint);
@@ -53,14 +53,17 @@
             text-transform: uppercase; cursor: pointer; transition: all 0.3s; flex: 1 1 45%;
         }
         button:active { background: var(--neon-mint); color: var(--bg-color); }
+        
+        /* 음성 인식 버튼 포인트 컬러 */
         button.mic-btn { border-color: #ffaa00; color: #ffaa00; }
         button.mic-btn:active, button.mic-btn.recording { background: #ffaa00; color: #000; box-shadow: 0 0 15px #ffaa00; }
         button.full-width { flex: 1 1 100%; }
         
         /* 1단계 양자택일 버튼 스타일 */
-        button.fail-btn { border-color: var(--neon-magenta); color: var(--neon-magenta); }
+        #voca-eval-btns { display: none; width: 100%; gap: 10px; }
+        button.fail-btn { border-color: var(--neon-magenta); color: var(--neon-magenta); flex: 1; }
         button.fail-btn:active { background: var(--neon-magenta); color: var(--bg-color); }
-        button.pass-btn { border-color: var(--neon-mint); color: var(--neon-mint); }
+        button.pass-btn { border-color: var(--neon-mint); color: var(--neon-mint); flex: 1; }
         button.pass-btn:active { background: var(--neon-mint); color: var(--bg-color); }
 
         #loading { color: var(--neon-mint); font-weight: bold; letter-spacing: 1px; }
@@ -89,28 +92,28 @@
             <div id="accuracy-text" class="accuracy"></div>
             
             <div class="controls">
-                <button id="btn-listen" style="display:none;" onclick="playTTS()">[ 듣기 ]</button>
-                <button id="btn-speak" class="mic-btn" style="display:none;" onclick="startSTT()">[ 말하기 ]</button>
-                <button id="btn-action" class="full-width" onclick="handleAction()">[ 정답 확인 ]</button>
-                
-                <button id="btn-fail" class="fail-btn" style="display:none;" onclick="handleVocaResult(false)">[ 몰랐음 (오답) ]</button>
-                <button id="btn-pass" class="pass-btn" style="display:none;" onclick="handleVocaResult(true)">[ 알았음 (통과) ]</button>
+                <button id="btn-action" class="full-width" style="display:none;" onclick="handleAction()">[ 정답 확인 ]</button>
+                <div id="voca-eval-btns">
+                    <button id="btn-fail" class="fail-btn" onclick="handleVocaResult(false)">[ 몰랐음 (오답) ]</button>
+                    <button id="btn-pass" class="pass-btn" onclick="handleVocaResult(true)">[ 알았음 (통과) ]</button>
+                </div>
 
+                <button id="btn-listen" style="display:none;" onclick="playTTS()">[ 원어민 듣기 ]</button>
+                <button id="btn-speak" class="mic-btn" style="display:none;" onclick="startSTT()">[ 따라 말하기 ]</button>
+                
                 <button id="btn-next" class="full-width" style="display:none;" onclick="nextItem()">[ 다음으로 ]</button>
             </div>
         </div>
     </div>
 
     <script>
-        // 통신 URL
+        // 백엔드 통신 주소 유지
         const GAS_URL = "https://script.google.com/macros/s/AKfycbyuMPRaNEUCrr3FLjPDuQBgdOM1GTsPD8KG9g1-AN01NPv9k75VqIGSEXggUvavniyh/exec";
         
         let db = { vocabulary: [], sentences: [] };
         let currentPhase = 1; 
         let currentIndex = 0;
-        let isAnswerRevealed = false;
 
-        // 브라우저 음성 엔진 초기화
         const synth = window.speechSynthesis;
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const recognition = SpeechRecognition ? new SpeechRecognition() : null;
@@ -139,76 +142,81 @@
         }
 
         function renderItem() {
-            isAnswerRevealed = false;
+            // 화면 초기화
             document.getElementById('answer-text').style.display = 'none';
             document.getElementById('accuracy-text').style.display = 'none';
             
+            document.getElementById('btn-action').style.display = 'none';
+            document.getElementById('voca-eval-btns').style.display = 'none';
+            document.getElementById('btn-listen').style.display = 'none';
+            document.getElementById('btn-speak').style.display = 'none';
+            document.getElementById('btn-next').style.display = 'none';
+
             const qText = document.getElementById('question-text');
             const aText = document.getElementById('answer-text');
             const ctxLabel = document.getElementById('context-label');
-            
-            const btnListen = document.getElementById('btn-listen');
-            const btnSpeak = document.getElementById('btn-speak');
-            const btnAction = document.getElementById('btn-action');
-            const btnNext = document.getElementById('btn-next');
-            const btnFail = document.getElementById('btn-fail');
-            const btnPass = document.getElementById('btn-pass');
 
-            // 버튼 초기화
-            btnAction.style.display = 'block';
-            btnNext.style.display = 'none';
-            btnFail.style.display = 'none';
-            btnPass.style.display = 'none';
-
+            // 상단 페이즈 네비게이터 갱신
             document.querySelectorAll('.phase-indicator span').forEach(el => el.classList.remove('active'));
             document.getElementById(`nav-p${currentPhase}`).classList.add('active');
 
             if (currentPhase === 1) { 
+                // [ 1단계: 단어 암기 ]
                 if(currentIndex >= db.vocabulary.length) { advancePhase(); return; }
                 const item = db.vocabulary[currentIndex];
                 ctxLabel.innerText = `[ VOCA : ${currentIndex + 1} / ${db.vocabulary.length} ]`;
                 qText.innerText = item.eng;
                 aText.innerText = item.kor;
-                btnListen.style.display = 'block';
-                btnSpeak.style.display = 'none';
+                
+                // 정답 확인 버튼만 보이기
+                document.getElementById('btn-action').style.display = 'block';
             } 
             else if (currentPhase === 2) { 
+                // [ 2단계: 문장 쉐도잉 (수정됨) ]
                 if(currentIndex >= db.sentences.length) { advancePhase(); return; }
                 const item = db.sentences[currentIndex];
                 ctxLabel.innerText = `[ SHADOWING : ${item.context} ]`;
                 qText.innerText = item.eng; 
                 aText.innerText = item.kor;
-                btnListen.style.display = 'block';
-                btnSpeak.style.display = 'block';
+                
+                // 처음부터 뜻(한글)이 보이도록 설정
+                aText.style.display = 'block'; 
+                
+                document.getElementById('btn-listen').style.display = 'block';
+                document.getElementById('btn-speak').style.display = 'block';
+                document.getElementById('btn-speak').innerText = "[ 따라 말하기 ]";
             }
             else if (currentPhase === 3) { 
+                // [ 3단계: 한영 번역 영작 ]
                 if(currentIndex >= db.sentences.length) { completeTraining(); return; }
                 const item = db.sentences[currentIndex];
                 ctxLabel.innerText = `[ TRANSLATE : ${item.context} ]`;
                 qText.innerText = item.kor; 
-                aText.innerText = item.eng;
-                btnListen.style.display = 'none'; 
-                btnSpeak.style.display = 'block';
+                aText.innerText = item.eng; // 정답 영어문장(숨겨짐)
+                
+                document.getElementById('btn-speak').style.display = 'block';
+                document.getElementById('btn-speak').innerText = "[ 영어로 말하기 ]";
             }
         }
 
         function handleAction() {
+            // 1단계와 3단계에서 정답을 보여주는 공통 로직
             document.getElementById('answer-text').style.display = 'block';
-            document.getElementById('btn-action').style.display = 'none';
-            isAnswerRevealed = true;
             
             if (currentPhase === 1) {
-                // 1단계: 양자택일 버튼 활성화
-                document.getElementById('btn-fail').style.display = 'block';
-                document.getElementById('btn-pass').style.display = 'block';
-            } else {
-                // 2, 3단계: 다음으로 버튼 활성화
+                // 1단계: 정답 확인 숨기고, 동일한 자리에 알았음/몰랐음 버튼 나란히 출력
+                document.getElementById('btn-action').style.display = 'none';
+                document.getElementById('voca-eval-btns').style.display = 'flex';
+            } else if (currentPhase === 3) {
+                // 3단계: 말하기 완료 후 정답(영어) 보여주고 다음 버튼 노출
+                document.getElementById('btn-speak').style.display = 'none';
+                document.getElementById('btn-listen').style.display = 'block';
+                document.getElementById('btn-listen').innerText = "[ 정답 듣기 ]";
                 document.getElementById('btn-next').style.display = 'block';
-                if(currentPhase === 3) document.getElementById('btn-listen').style.display = 'block';
             }
         }
 
-        // 1단계 전용 결과 처리 로직
+        // 1단계 오답 노트 연동
         function handleVocaResult(isKnown) {
             if (!isKnown) {
                 const item = db.vocabulary[currentIndex];
@@ -272,13 +280,20 @@
                     accText.style.color = "var(--neon-mint)";
                 }
                 
-                handleAction(); 
+                if (currentPhase === 2) {
+                    // 2단계: 이미 정답을 보고 있으므로 다음 버튼만 노출
+                    document.getElementById('btn-next').style.display = 'block';
+                } else if (currentPhase === 3) {
+                    // 3단계: 정답(영어 문장) 공개 로직 실행
+                    handleAction(); 
+                }
             };
             
             recognition.onspeechend = function() { recognition.stop(); };
             recognition.onend = function() {
                 btnSpeak.classList.remove('recording');
-                btnSpeak.innerText = "[ 다시 말하기 ]";
+                if (currentPhase === 2) btnSpeak.innerText = "[ 다시 말하기 ]";
+                if (currentPhase === 3) btnSpeak.innerText = "[ 다시 시도하기 ]";
             };
         }
 
