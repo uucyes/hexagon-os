@@ -57,6 +57,12 @@
         button.mic-btn:active, button.mic-btn.recording { background: #ffaa00; color: #000; box-shadow: 0 0 15px #ffaa00; }
         button.full-width { flex: 1 1 100%; }
         
+        /* 1단계 양자택일 버튼 스타일 */
+        button.fail-btn { border-color: var(--neon-magenta); color: var(--neon-magenta); }
+        button.fail-btn:active { background: var(--neon-magenta); color: var(--bg-color); }
+        button.pass-btn { border-color: var(--neon-mint); color: var(--neon-mint); }
+        button.pass-btn:active { background: var(--neon-mint); color: var(--bg-color); }
+
         #loading { color: var(--neon-mint); font-weight: bold; letter-spacing: 1px; }
     </style>
 </head>
@@ -86,13 +92,17 @@
                 <button id="btn-listen" style="display:none;" onclick="playTTS()">[ 듣기 ]</button>
                 <button id="btn-speak" class="mic-btn" style="display:none;" onclick="startSTT()">[ 말하기 ]</button>
                 <button id="btn-action" class="full-width" onclick="handleAction()">[ 정답 확인 ]</button>
-                <button id="btn-next" class="full-width" onclick="nextItem()">[ 다음으로 ]</button>
+                
+                <button id="btn-fail" class="fail-btn" style="display:none;" onclick="handleVocaResult(false)">[ 몰랐음 (오답) ]</button>
+                <button id="btn-pass" class="pass-btn" style="display:none;" onclick="handleVocaResult(true)">[ 알았음 (통과) ]</button>
+
+                <button id="btn-next" class="full-width" style="display:none;" onclick="nextItem()">[ 다음으로 ]</button>
             </div>
         </div>
     </div>
 
     <script>
-        // 대표님의 구글 웹앱 URL 삽입 완료
+        // 통신 URL
         const GAS_URL = "https://script.google.com/macros/s/AKfycbyuMPRaNEUCrr3FLjPDuQBgdOM1GTsPD8KG9g1-AN01NPv9k75VqIGSEXggUvavniyh/exec";
         
         let db = { vocabulary: [], sentences: [] };
@@ -100,7 +110,7 @@
         let currentIndex = 0;
         let isAnswerRevealed = false;
 
-        // 브라우저 음성 인식/출력 엔진 초기화
+        // 브라우저 음성 엔진 초기화
         const synth = window.speechSynthesis;
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const recognition = SpeechRecognition ? new SpeechRecognition() : null;
@@ -110,7 +120,6 @@
             recognition.interimResults = false;
         }
 
-        // 데이터 로드
         async function loadData() {
             try {
                 const response = await fetch(GAS_URL + "?action=getCharmData");
@@ -129,7 +138,6 @@
             }
         }
 
-        // 화면 렌더링
         function renderItem() {
             isAnswerRevealed = false;
             document.getElementById('answer-text').style.display = 'none';
@@ -143,14 +151,19 @@
             const btnSpeak = document.getElementById('btn-speak');
             const btnAction = document.getElementById('btn-action');
             const btnNext = document.getElementById('btn-next');
+            const btnFail = document.getElementById('btn-fail');
+            const btnPass = document.getElementById('btn-pass');
 
+            // 버튼 초기화
             btnAction.style.display = 'block';
             btnNext.style.display = 'none';
+            btnFail.style.display = 'none';
+            btnPass.style.display = 'none';
 
             document.querySelectorAll('.phase-indicator span').forEach(el => el.classList.remove('active'));
             document.getElementById(`nav-p${currentPhase}`).classList.add('active');
 
-            if (currentPhase === 1) { // 1단계: 단어 암기
+            if (currentPhase === 1) { 
                 if(currentIndex >= db.vocabulary.length) { advancePhase(); return; }
                 const item = db.vocabulary[currentIndex];
                 ctxLabel.innerText = `[ VOCA : ${currentIndex + 1} / ${db.vocabulary.length} ]`;
@@ -159,7 +172,7 @@
                 btnListen.style.display = 'block';
                 btnSpeak.style.display = 'none';
             } 
-            else if (currentPhase === 2) { // 2단계: 문장 쉐도잉 (영어 보고 읽기)
+            else if (currentPhase === 2) { 
                 if(currentIndex >= db.sentences.length) { advancePhase(); return; }
                 const item = db.sentences[currentIndex];
                 ctxLabel.innerText = `[ SHADOWING : ${item.context} ]`;
@@ -168,7 +181,7 @@
                 btnListen.style.display = 'block';
                 btnSpeak.style.display = 'block';
             }
-            else if (currentPhase === 3) { // 3단계: 한영 번역 (한글 보고 영작하여 말하기)
+            else if (currentPhase === 3) { 
                 if(currentIndex >= db.sentences.length) { completeTraining(); return; }
                 const item = db.sentences[currentIndex];
                 ctxLabel.innerText = `[ TRANSLATE : ${item.context} ]`;
@@ -179,13 +192,29 @@
             }
         }
 
-        // 정답 공개 및 다음 버튼 활성화
         function handleAction() {
             document.getElementById('answer-text').style.display = 'block';
             document.getElementById('btn-action').style.display = 'none';
-            document.getElementById('btn-next').style.display = 'block';
             isAnswerRevealed = true;
-            if(currentPhase === 3) document.getElementById('btn-listen').style.display = 'block';
+            
+            if (currentPhase === 1) {
+                // 1단계: 양자택일 버튼 활성화
+                document.getElementById('btn-fail').style.display = 'block';
+                document.getElementById('btn-pass').style.display = 'block';
+            } else {
+                // 2, 3단계: 다음으로 버튼 활성화
+                document.getElementById('btn-next').style.display = 'block';
+                if(currentPhase === 3) document.getElementById('btn-listen').style.display = 'block';
+            }
+        }
+
+        // 1단계 전용 결과 처리 로직
+        function handleVocaResult(isKnown) {
+            if (!isKnown) {
+                const item = db.vocabulary[currentIndex];
+                logErrorToGAS(item.eng, "단어 뜻 암기 실패 (셀프 체크)", 0);
+            }
+            nextItem();
         }
 
         function nextItem() {
@@ -200,7 +229,6 @@
             renderItem();
         }
 
-        // TTS (원어민 발음)
         function playTTS() {
             if(synth.speaking) synth.cancel();
             let textToSpeak = currentPhase === 1 ? db.vocabulary[currentIndex].eng : db.sentences[currentIndex].eng;
@@ -210,7 +238,6 @@
             synth.speak(utterThis);
         }
 
-        // STT (내 발음 인식 및 채점)
         function startSTT() {
             if(!recognition) {
                 alert("이 브라우저는 음성 인식을 지원하지 않습니다.");
@@ -255,7 +282,6 @@
             };
         }
 
-        // 정확도 계산 알고리즘
         function calculateAccuracy(spoken, target) {
             let sWords = spoken.toLowerCase().replace(/[^a-z0-9 ]/g, '').split(' ');
             let tWords = target.toLowerCase().replace(/[^a-z0-9 ]/g, '').split(' ');
@@ -263,7 +289,6 @@
             return Math.round((matchCount / tWords.length) * 100);
         }
 
-        // 오답 노트 기록 (백엔드 전송)
         function logErrorToGAS(question, answer, accuracy) {
             fetch(GAS_URL, {
                 method: 'POST',
@@ -274,13 +299,11 @@
             });
         }
 
-        // 훈련 완료 처리
         function completeTraining() {
-            alert("1~3단계 기본 훈련이 완료되었습니다. (추후 Phase 5 AI 프리토킹 업데이트 예정)");
+            alert("1~3단계 기본 훈련이 완료되었습니다.");
             window.location.href = 'index.html';
         }
 
-        // 시작
         window.onload = loadData;
     </script>
 </body>
