@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>HEXAGON.OS - CHM Training V2</title>
+    <title>HEXAGON.OS - CHM Training V2.1</title>
     <style>
         :root {
             --bg-color: #050505;
@@ -45,7 +45,6 @@
         .answer { font-size: 1.2rem; color: var(--neon-mint); display: none; margin-bottom: 20px; word-break: keep-all; line-height: 1.4; }
         .accuracy { font-size: 0.95rem; color: var(--neon-magenta); margin-top: 15px; display: none; padding: 10px; background: #000; border: 1px dashed var(--neon-magenta); border-radius: 5px; }
         
-        /* 모바일 최적화 버튼 레이아웃 */
         .controls { display: flex; flex-direction: column; width: 100%; gap: 12px; margin-top: 30px; }
         
         button {
@@ -59,7 +58,6 @@
         button.mic-btn { border-color: #ffaa00; color: #ffaa00; }
         button.mic-btn:active, button.mic-btn.recording { background: #ffaa00; color: #000; box-shadow: 0 0 15px #ffaa00; }
         
-        /* 양자택일 버튼 행 (5:5 비율) */
         .btn-row { display: flex; gap: 10px; width: 100%; }
         .btn-row button { flex: 1; padding: 16px 0; }
         
@@ -74,7 +72,7 @@
 <body>
 
     <header>
-        <h1>[ CHM ] AUDIO MODULE</h1>
+        <h1>[ CHM ] AUDIO MODULE V2.1</h1>
         <div class="exit-btn" onclick="window.location.href='index.html'">[ EXIT ]</div>
     </header>
     
@@ -166,6 +164,7 @@
                 qText.innerText = item.eng;
                 aText.innerText = item.kor;
                 
+                // 1단계 시작 시 원어민 듣기 및 정답 확인 활성화
                 document.getElementById('btn-listen').style.display = 'block';
                 document.getElementById('btn-action').style.display = 'block';
             } 
