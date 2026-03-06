@@ -28,41 +28,15 @@
       box-sizing: border-box;
     }
 
-    .header-panel {
-      width: 100%;
-      max-width: 420px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid var(--border-color);
-      padding-bottom: 15px;
-      margin-bottom: 20px;
-    }
-
-    .system-title {
-      font-size: 18px;
-      font-weight: 800;
-      letter-spacing: 3px;
-      color: var(--text-main);
-      text-transform: uppercase;
-    }
-
-    .nav-btn {
-      background: transparent;
-      color: var(--text-muted);
-      border: 1px solid var(--border-color);
-      padding: 8px 12px;
-      border-radius: 4px;
-      font-size: 12px;
-      cursor: pointer;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      transition: all 0.2s ease;
-    }
-
-    .nav-btn:active {
-      background: var(--border-color);
-      color: var(--text-main);
+    /* 표준 헤더 규격 적용 (너비 420px 유지) */
+    .header { 
+      width: 100%; 
+      max-width: 420px; 
+      display: flex; 
+      justify-content: space-between; 
+      margin-bottom: 20px; 
+      border-bottom: 1px solid #333; 
+      padding-bottom: 10px; 
     }
 
     .cyber-card {
@@ -223,9 +197,9 @@
 </head>
 <body>
 
-  <div class="header-panel">
-    <div class="system-title">STRENTH.OS</div>
-    <button class="nav-btn" onclick="goHome()">[ RETURN TO OS ]</button>
+  <div class="header">
+    <b style="letter-spacing:2px; color:var(--neon-red);">STRENGTH.OS</b>
+    <span onclick="goHome()" style="color:#888; cursor:pointer;">[ EXIT ]</span>
   </div>
   
   <div id="timer-display" class="timer-panel">
@@ -411,7 +385,6 @@
       window.location.href = 'index.html';
     }
 
-    // ── 자체 팝업 모달(Custom Modal) 엔진 ──────────────────────────────
     function showCustomModal(title, msg, isConfirm, onConfirm) {
       const overlay = document.createElement('div');
       overlay.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:9999;display:flex;justify-content:center;align-items:center;";
@@ -436,7 +409,6 @@
       }
     }
 
-    // ── 자체 팝업 입력창(Custom Prompt) 엔진 ──────────────────────────────
     function showCustomPrompt(title, msg, onConfirm) {
       const overlay = document.createElement('div');
       overlay.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:9999;display:flex;justify-content:center;align-items:center;";
