@@ -9,8 +9,6 @@
 
     :root {
       --bg-dark: #0a0510; --cyan: #00e5ff; --magenta: #ff00ff; --gold: #ffd700;
-      --strength: #ff3366; --stamina: #00ffcc; --intellect: #00bfff; 
-      --charm: #ff00aa; --vitality: #ffcc00; --legal: #b026ff;
       --card-bg: rgba(20, 10, 30, 0.85);
     }
 
@@ -37,34 +35,33 @@
     .chart-container {
       width: 100%; max-width: 320px; height: 320px; background: var(--card-bg);
       border-radius: 15px; border: 1px solid rgba(176, 38, 255, 0.5); display: flex; justify-content: center; align-items: center;
-      margin-bottom: 25px; position: relative; box-shadow: 0 0 25px rgba(0, 229, 255, 0.2); z-index: 5;
+      margin-bottom: 20px; position: relative; box-shadow: 0 0 25px rgba(0, 229, 255, 0.2); z-index: 5;
     }
     canvas { display: block; }
 
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; max-width: 320px; z-index: 5; position: relative; }
     
+    /* 통합된 사이버펑크 단일 색상(Cyan) 버튼 디자인 */
     .module-btn {
-      background: rgba(10, 5, 20, 0.6); border: 1px solid #333; padding: 15px 0;
-      border-radius: 6px; text-align: center; text-decoration: none; font-weight: bold; font-size: 1.2rem;
-      letter-spacing: 2px; transition: 0.3s; position: relative; overflow: hidden; line-height: 1.2;
-      backdrop-filter: blur(4px); font-family: 'Malgun Gothic', sans-serif; /* 한글 가독성 고려 */
+      background: rgba(10, 5, 20, 0.6); border: 1px solid var(--cyan); padding: 12px 0;
+      border-radius: 6px; text-align: center; text-decoration: none; font-weight: bold; font-size: 1.0rem;
+      letter-spacing: 1px; transition: 0.3s; position: relative; overflow: hidden; line-height: 1.3;
+      backdrop-filter: blur(4px); font-family: 'Share Tech Mono', monospace; 
+      color: var(--cyan); box-shadow: 0 0 10px rgba(0, 229, 255, 0.2);
     }
-    .module-btn span.eng { font-size: 0.75rem; color: #aaa; display: block; margin-top: 5px; letter-spacing: 1px; font-family: 'Share Tech Mono', monospace; }
-    .module-btn:active { transform: scale(0.95); }
+    /* 한글 폰트 확대 및 강조 */
+    .module-btn span.kor { font-size: 0.85rem; color: #fff; display: block; margin-top: 4px; letter-spacing: 2px; font-family: 'Malgun Gothic', sans-serif; text-shadow: 0 0 5px rgba(255,255,255,0.3); }
     
-    .btn-strength { color: var(--strength); border-color: var(--strength); box-shadow: 0 0 10px rgba(255, 51, 102, 0.3); }
-    .btn-stamina { color: var(--stamina); border-color: var(--stamina); box-shadow: 0 0 10px rgba(0, 255, 204, 0.3); }
-    .btn-intellect { color: var(--intellect); border-color: var(--intellect); box-shadow: 0 0 10px rgba(0, 191, 255, 0.3); }
-    .btn-charm { color: var(--charm); border-color: var(--charm); box-shadow: 0 0 10px rgba(255, 0, 170, 0.3); }
-    .btn-vitality { color: var(--vitality); border-color: var(--vitality); box-shadow: 0 0 10px rgba(255, 204, 0, 0.3); }
-    .btn-legal { color: var(--legal); border-color: var(--legal); box-shadow: 0 0 10px rgba(176, 38, 255, 0.3); }
-
+    /* 터치(Active) 시 색상 반전 타격감 */
+    .module-btn:active { transform: scale(0.95); background: var(--cyan); color: #000; }
+    .module-btn:active span.kor { color: #000; text-shadow: none; }
+    
     .module-btn.locked { color: #555 !important; border-color: #333 !important; box-shadow: none !important; background: rgba(0,0,0,0.8); pointer-events: none; }
-    .module-btn.locked span.eng { color: #444; }
+    .module-btn.locked span.kor { color: #444; }
     .module-btn.locked::after { content: 'LOCKED'; position: absolute; bottom: 3px; left: 0; right: 0; font-size: 0.6rem; color: #ff0033; letter-spacing: 2px; }
 
     .report-btn {
-      background: rgba(0, 229, 255, 0.1); color: var(--cyan); border: 1px dashed var(--cyan); padding: 12px;
+      background: rgba(0, 229, 255, 0.05); color: var(--cyan); border: 1px dashed var(--cyan); padding: 12px;
       border-radius: 8px; text-align: center; font-size: 0.9rem; font-weight: bold; letter-spacing: 1px;
       width: 100%; max-width: 320px; margin-top: 25px; cursor: pointer; transition: 0.2s; z-index: 5; position: relative;
     }
@@ -81,7 +78,7 @@
 
     .ai-btn { background: transparent; border: 1px solid var(--magenta); color: var(--magenta); width: 100%; padding: 10px; margin-top: 15px; border-radius: 4px; font-family: inherit; font-weight: bold; cursor: pointer; transition: 0.2s; }
     .ai-btn:active { background: var(--magenta); color: #000; }
-    .ai-terminal { margin-top: 10px; font-size: 0.8rem; color: #00ff00; line-height: 1.5; min-height: 60px; background: #050505; padding: 10px; border: 1px solid #333; border-radius: 4px; word-break: keep-all; }
+    .ai-terminal { margin-top: 10px; font-size: 0.8rem; color: #00ff00; line-height: 1.6; min-height: 60px; background: #050505; padding: 12px; border: 1px solid #333; border-radius: 4px; word-break: keep-all; }
     .blink { animation: blinker 1s linear infinite; }
     @keyframes blinker { 50% { opacity: 0; } }
 
@@ -104,12 +101,12 @@
     </div>
 
     <div class="grid">
-      <a href="strength.html" class="module-btn btn-strength" id="btn-strength">STRENGH<span class="eng">[ 근력 ]</span></a>
-      <a href="stamina.html" class="module-btn btn-stamina" id="btn-stamina">STAMINA<span class="eng">[ 체력 ]</span></a>
-      <a href="intellect.html" class="module-btn btn-intellect" id="btn-intellect">INTELLECT<span class="eng">[ 지력 ]</span></a>
-      <a href="charm.html" class="module-btn btn-charm" id="btn-charm">CHARMING<span class="eng">[ 매력 ]</span></a>
-      <a href="vitality.html" class="module-btn btn-vitality" id="btn-vitality">VITALITY<span class="eng">[ 활력 ]</span></a>
-      <a href="legal.html" class="module-btn btn-legal" id="btn-legal">LEGAL<span class="eng">[ 법력 ]</span></a>
+      <a href="strength.html" class="module-btn" id="btn-strength">STRENGTH<span class="kor">근력 [ STR ]</span></a>
+      <a href="stamina.html" class="module-btn" id="btn-stamina">STAMINA<span class="kor">체력 [ STA ]</span></a>
+      <a href="intellect.html" class="module-btn" id="btn-intellect">INTELLECT<span class="kor">지력 [ INT ]</span></a>
+      <a href="charm.html" class="module-btn" id="btn-charm">CHARMING<span class="kor">매력 [ CHM ]</span></a>
+      <a href="vitality.html" class="module-btn" id="btn-vitality">VITALITY<span class="kor">활력 [ VIT ]</span></a>
+      <a href="legal.html" class="module-btn" id="btn-legal">LEGAL<span class="kor">법력 [ LEG ]</span></a>
     </div>
 
     <div class="report-btn" onclick="toggleReport()">[ 터미널: 데이터 리포트 접속 ]</div>
@@ -181,12 +178,10 @@
       content.innerHTML = html;
     }
 
-    // AI API 키 입력 및 호출 로직 강화
     async function requestAIAnalysis() {
       let apiKey = localStorage.getItem('hexagon_gemini_api_key');
       const aiOutput = document.getElementById('ai-output');
       
-      // 키가 없으면 즉시 입력 팝업(prompt) 띄우기
       if(!apiKey || apiKey.trim() === '') {
         apiKey = prompt("[시스템 알림]\nGemini API 키가 기기에 등록되어 있지 않습니다.\n발급받으신 API 키를 아래에 붙여넣기 해주세요:");
         if(apiKey && apiKey.trim() !== '') {
@@ -200,9 +195,15 @@
       aiOutput.innerHTML = "> TRANSMITTING DATA TO AI_CORE...<span class='blink'>_</span>";
       
       const statsText = JSON.stringify(dashboardStats);
-      const promptText = `당신은 사용자의 훈련 스탯을 분석하는 냉철하고 전문적인 사이버펑크 AI 전술 코치입니다.
-현재 사용자의 주간/월간 훈련(근력, 체력, 지력, 매력, 활력, 법력) 달성 데이터는 다음과 같습니다: ${statsText}
-이 데이터를 바탕으로 현재 훈련의 밸런스와 불균형을 즉각적으로 분석하고, 다음 주에 집중해야 할 'X력' 훈련에 대해 3~4문장으로 핵심만 짧고 차가운 어조로 명령하듯 피드백을 제공해 주세요. 불필요한 인사는 생략합니다.`;
+      
+      const promptText = `당신은 대표님의 개인 훈련 스탯을 전담 분석하는 통찰력 있고 예의 바른 수석 전술 코치입니다.
+사용자를 부를 때는 반드시 '대표님'이라고 호칭하며, 가장 정중하고 전문적인 존댓말을 사용해야 합니다. 절대 반말을 사용하지 마십시오.
+
+현재 대표님의 주간/월간 훈련(근력, 체력, 지력, 매력, 활력, 법력) 달성 데이터는 다음과 같습니다: ${statsText}
+
+단순히 "무엇이 부족하다, 무엇이 과하다"는 식의 뻔한 수치 나열은 절대 피하십시오.
+대신, 실적이 저조한 훈련 항목을 파악하여 "대표님, 최근 해당 훈련을 진행하시기에 일정이 너무 바쁘셨습니까?"와 같이 훈련을 완수하지 못한 사유를 통찰력 있게 짚어주십시오. 
+그 후, 대표님이 다시 해당 훈련에 온전히 몰입하실 수 있도록 격려와 함께 실질적이고 전략적인 조언을 3~4문장으로 브리핑해 주십시오.`;
 
       try {
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
@@ -212,14 +213,13 @@
         });
         
         if(!response.ok) {
-          throw new Error('API 키가 유효하지 않거나 한도를 초과했습니다.');
+          throw new Error('API 연결에 문제가 발생했습니다. 키를 확인해 주세요.');
         }
 
         const resData = await response.json();
         const text = resData.candidates[0].content.parts[0].text.replace(/\*/g, ''); 
         typeWriterEffect("> " + text, aiOutput);
       } catch(e) {
-        // 오류 발생 시 키 초기화 옵션 제공
         localStorage.removeItem('hexagon_gemini_api_key');
         aiOutput.innerHTML = `<span style='color:red'>[ERR] 연결 실패: ${e.message}<br>API 키가 초기화되었습니다. 버튼을 다시 눌러 정확한 키를 입력하세요.</span>`;
       }
@@ -230,9 +230,9 @@
       let i = 0;
       function type() {
         if (i < text.length) {
-          element.innerHTML += text.charAt(i) === '\n' ? '<br>' : text.charAt(i);
+          element.innerHTML += text.charAt(i) === '\n' ? '<br><br>' : text.charAt(i);
           i++;
-          setTimeout(type, 25); 
+          setTimeout(type, 30); 
         } else {
           element.innerHTML += "<span class='blink'>_</span>";
         }
@@ -240,7 +240,6 @@
       type();
     }
 
-    // 차트 시인성(Visibility) 대폭 개선
     function drawHexagonChart(stats, targets) {
       const canvas = document.getElementById('radarChart');
       const ctx = canvas.getContext('2d');
@@ -253,7 +252,6 @@
       const categories = ['근력', '체력', '매력', '활력', '법력', '지력'];
       const angles = [-Math.PI/2, -Math.PI/6, Math.PI/6, Math.PI/2, 5*Math.PI/6, 7*Math.PI/6];
 
-      // 1. 거미줄 라인 밝기 향상 (투명도 0.4 -> 0.7)
       ctx.strokeStyle = 'rgba(176, 38, 255, 0.7)';
       ctx.lineWidth = 1;
       for (let level = 0.2; level <= 1.0; level += 0.2) {
@@ -268,7 +266,6 @@
         ctx.stroke();
       }
 
-      // 2. 축 및 텍스트 밝기 향상
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       for (let i = 0; i < 6; i++) {
@@ -280,8 +277,8 @@
         let labelX = cx + (R + 30) * Math.cos(angles[i]);
         let labelY = cy + (R + 25) * Math.sin(angles[i]);
         
-        ctx.font = 'bold 13px "Malgun Gothic", sans-serif'; // 한글 폰트 적용
-        ctx.fillStyle = '#ddd'; // 밝은 회색으로 변경
+        ctx.font = 'bold 13px "Malgun Gothic", sans-serif'; 
+        ctx.fillStyle = '#ddd'; 
         ctx.fillText(categories[i], labelX, labelY - 8);
         
         ctx.font = '11px "Share Tech Mono"';
@@ -291,7 +288,6 @@
         ctx.fillText(`${statVal}/${targetVal}`, labelX, labelY + 8);
       }
 
-      // 3. 누적 도형 (일렉트릭 블루 렌더링 - 투명도 0.4로 진하게 변경, 선 두께 2.5로 상향)
       ctx.beginPath();
       let points = [];
       for (let i = 0; i < 6; i++) {
@@ -308,16 +304,15 @@
       }
       ctx.closePath();
       
-      ctx.fillStyle = 'rgba(0, 229, 255, 0.4)'; // 더 진하게 채우기
+      ctx.fillStyle = 'rgba(0, 229, 255, 0.4)';
       ctx.fill();
       ctx.strokeStyle = 'var(--cyan)';
-      ctx.lineWidth = 2.5; // 외곽선 두껍게
+      ctx.lineWidth = 2.5; 
       ctx.shadowColor = 'var(--cyan)';
       ctx.shadowBlur = 15;
       ctx.stroke();
       ctx.shadowBlur = 0; 
 
-      // 초과 달성 시 골드 발광 포인트
       for (let i = 0; i < 6; i++) {
         let p = points[i];
         ctx.beginPath();
