@@ -9,10 +9,18 @@
     body { background: var(--bg); color: #fff; font-family: sans-serif; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
     .header { width: 100%; max-width: 400px; display: flex; justify-content: space-between; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; }
     
-    .status-box { text-align: center; margin-bottom: 20px; width: 100%; max-width: 400px; }
+    .status-box { text-align: center; margin-bottom: 15px; width: 100%; max-width: 400px; }
     .status-title { font-size: 12px; color: #888; letter-spacing: 2px; margin-bottom: 5px; }
     .status-value { font-size: 20px; font-weight: bold; color: var(--p); letter-spacing: 1px; }
     .status-weekend { color: var(--danger); }
+
+    /* 15강 진도 트래커 스타일 */
+    .semester-progress { background: #1a1a1a; padding: 15px; border-radius: 6px; margin-bottom: 20px; width: 100%; max-width: 400px; box-sizing: border-box; border: 1px solid #333; }
+    .progress-info { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 15px; color: #aaa; font-weight: bold; }
+    .lecture-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+    .lecture-box { padding: 8px 0; text-align: center; border-radius: 4px; font-size: 12px; font-weight: bold; background: #222; color: #555; }
+    .lecture-box.completed { background: rgba(255, 230, 0, 0.15); color: var(--p); border: 1px solid var(--p); }
+    .lecture-box.current { background: var(--p); color: #000; box-shadow: 0 0 10px rgba(255, 230, 0, 0.5); }
 
     .case-card { background: var(--card); border: 1px solid #333; border-left: 4px solid var(--p); padding: 18px; width: 100%; max-width: 400px; border-radius: 6px; margin-bottom: 15px; box-sizing: border-box; box-shadow: 0 4px 10px rgba(255, 230, 0, 0.05); }
     .case-card.unsolved { border-left: 4px solid var(--danger); box-shadow: 0 4px 10px rgba(255, 68, 68, 0.1); }
@@ -20,7 +28,6 @@
     .case-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
     .case-subject { font-size: 18px; font-weight: bold; color: #fff; }
     .case-day { font-size: 12px; background: #222; padding: 3px 8px; border-radius: 4px; color: #aaa; }
-    
     .case-target { font-size: 14px; color: #ddd; margin-bottom: 15px; line-height: 1.4; }
     
     .btn-solve { background: transparent; color: var(--p); border: 1px solid var(--p); padding: 12px; width: 100%; border-radius: 4px; font-size: 14px; font-weight: bold; cursor: pointer; transition: 0.2s; letter-spacing: 1px; }
@@ -28,9 +35,7 @@
     .btn-solve.danger-btn { color: var(--danger); border-color: var(--danger); }
     .btn-solve.danger-btn:active { background: rgba(255, 68, 68, 0.1); }
 
-    .all-clear { text-align: center; color: var(--p); font-size: 16px; padding: 40px 20px; border: 1px dashed var(--p); border-radius: 8px; font-weight: bold; display: none; width: 100%; max-width: 400px; box-sizing: border-box; }
-    
-    /* 잠금(Lock) 화면 스타일 */
+    .all-clear { text-align: center; color: var(--p); font-size: 15px; padding: 30px 20px; border: 1px dashed var(--p); border-radius: 8px; font-weight: bold; display: none; width: 100%; max-width: 400px; box-sizing: border-box; line-height: 1.5; }
     .lock-screen { display: none; flex-direction: column; align-items: center; justify-content: center; width: 100%; max-width: 400px; padding: 40px 20px; border: 1px dashed var(--p); border-radius: 8px; text-align: center; box-sizing: border-box; }
     .lock-title { font-size: 18px; font-weight: bold; color: var(--p); margin-bottom: 10px; }
     .lock-msg { font-size: 14px; color: #aaa; line-height: 1.5; margin-bottom: 20px; }
@@ -43,10 +48,10 @@
   </div>
   
   <div id="loading" style="color:var(--p); padding:50px; font-weight:bold; text-align:center;">LOADING CASE FILES...</div>
-  
+
   <div id="lockScreen" class="lock-screen">
     <div class="lock-title">[ 오늘의 재판 완료 ]</div>
-    <div class="lock-msg">오늘 할당된 사건(학습)이 이미 시스템에 안전하게 기록되었습니다.<br>내일 다시 방문해 주십시오.</div>
+    <div class="lock-msg">오늘 할당된 사건(수강)이 이미 시스템에 안전하게 기록되었습니다.<br>진행하실 미제 사건이 없습니다.</div>
     <button style="background:var(--p); color:#000; padding:10px 20px; border:none; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="goHome()">메인으로 복귀</button>
   </div>
 
@@ -57,8 +62,20 @@
       <div class="status-value" id="statusText">정규 재판 진행 중</div>
     </div>
 
+    <div class="semester-progress">
+      <div class="progress-info">
+        <span>한국방송통신대 법학과 전공과목</span>
+        <span id="lectureStatusTxt" style="color:var(--p);">진도 동기화 중...</span>
+      </div>
+      <div class="lecture-grid" id="lectureGrid">
+        </div>
+    </div>
+
     <div id="caseContainer" style="width: 100%;"></div>
-    <div id="allClearMsg" class="all-clear">할당된 모든 사건(학습)이 해결되었습니다.<br>법력 수치가 상승했습니다.</div>
+    
+    <div id="allClearMsg" class="all-clear">
+      금일 심리할 사건이 없거나,<br>모든 수강 일정이 완료되었습니다.
+    </div>
     
   </div>
 
@@ -69,11 +86,10 @@
       fetch(API_URL + "?action=getData")
         .then(response => response.json())
         .then(d => {
-          if (d.locks && d.locks.legal) {
-            document.getElementById('lockScreen').style.display = 'flex';
-            document.getElementById('loading').style.display = 'none';
-            return; 
-          }
+          // 백엔드에서 파악한 진도 데이터를 바탕으로 15강 UI 렌더링
+          let completed = d.legalProgress ? d.legalProgress.completed : 0;
+          let current = d.legalProgress ? d.legalProgress.current : 1;
+          renderLectureGrid(completed, current);
 
           const isWeekend = (d.day === '토요일' || d.day === '일요일');
           
@@ -100,7 +116,7 @@
                 <div class="case-target">${item[3]}</div>
                 <button class="btn-solve ${isUnsolved ? 'danger-btn' : ''}" 
                         onclick="solveCase(${index}, '${item[2]}', ${item[5]}, ${item[6]})">
-                  [ 사건 해결 및 판결문 작성 완료 ]
+                  [ 수강 완료 및 판결문 작성 ]
                 </button>
               `;
               container.appendChild(card);
@@ -114,6 +130,24 @@
           document.getElementById('loading').innerText = "통신 오류가 발생했습니다."; 
         });
     };
+
+    function renderLectureGrid(completed, current) {
+      const grid = document.getElementById('lectureGrid');
+      document.getElementById('lectureStatusTxt').innerText = `${completed}강 완료 / ${current}강 진행 중`;
+
+      for(let i = 1; i <= 15; i++) {
+        let box = document.createElement('div');
+        box.className = 'lecture-box';
+        box.innerText = i + "강";
+
+        if (i <= completed) {
+          box.classList.add('completed');
+        } else if (i === current) {
+          box.classList.add('current');
+        }
+        grid.appendChild(box);
+      }
+    }
 
     function solveCase(index, subject, row, col) {
       const btn = document.querySelector(`#case-${index} .btn-solve`);
@@ -145,20 +179,20 @@
           const remaining = Array.from(document.querySelectorAll('.case-card')).filter(c => c.style.display !== 'none');
           if (remaining.length === 0) {
             document.getElementById('allClearMsg').style.display = 'block';
-            showCustomModal("재판 승소", "할당된 모든 사건(학습)이 해결되었습니다.<br>법력 수치가 상승했습니다. 메인으로 복귀합니다.", false, goHome);
+            showCustomModal("재판 승소", "오늘 할당된 과목의 수강 및 판결이 완료되었습니다.<br>법력 수치가 상승했습니다.", false, goHome);
           } else {
             showCustomModal("사건 해결", `[${subject}] 판결문 작성이 완료되었습니다.<br>다음 사건을 진행해 주십시오.`, false, null);
           }
         } else {
           showCustomModal("오류", "사건 해결 기록 실패: " + data.error, false);
-          btn.innerText = "[ 사건 해결 및 판결문 작성 완료 ]";
+          btn.innerText = "[ 수강 완료 및 판결문 작성 ]";
           btn.disabled = false;
         }
       })
       .catch(err => {
         document.body.style.cursor = 'default';
         showCustomModal("오류", "통신 문제로 기록을 저장하지 못했습니다.", false);
-        btn.innerText = "[ 사건 해결 및 판결문 작성 완료 ]";
+        btn.innerText = "[ 수강 완료 및 판결문 작성 ]";
         btn.disabled = false;
       });
     }
@@ -167,7 +201,6 @@
       window.location.href = 'index.html';
     }
 
-    // ── 자체 팝업 모달(Custom Modal) 엔진 ──
     function showCustomModal(title, msg, isConfirm, onConfirm) {
       const overlay = document.createElement('div');
       overlay.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:9999;display:flex;justify-content:center;align-items:center;";
