@@ -15,18 +15,37 @@
     .money-value { font-size: 16px; color: #aaa; margin-top: 5px; }
     .money-value span { color: var(--p); font-weight: bold; }
 
-    /* 생체 회복 타임라인 UI */
-    .health-card { background: var(--card); border: 1px solid #333; border-top: 4px solid var(--p); padding: 20px; width: 100%; max-width: 400px; border-radius: 6px; margin-bottom: 20px; box-sizing: border-box; box-shadow: 0 4px 15px rgba(0, 255, 204, 0.05); }
-    .health-header { font-size: 13px; color: var(--p); font-weight: bold; margin-bottom: 15px; letter-spacing: 1px; display: flex; justify-content: space-between; }
+    /* 누적형 타임라인 컨테이너 */
+    .timeline-container { width: 100%; max-width: 400px; max-height: 380px; overflow-y: auto; padding-right: 5px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 12px; }
     
-    .current-stage { font-size: 16px; font-weight: bold; color: #fff; margin-bottom: 8px; word-break: keep-all; line-height: 1.3; }
-    .humor-desc { font-size: 13px; color: var(--magenta); line-height: 1.5; margin-bottom: 20px; background: rgba(255,0,255,0.1); padding: 10px; border-radius: 4px; border-left: 2px solid var(--magenta); word-break: keep-all; }
-    
+    /* 타임라인 개별 아이템 디자인 */
+    .tl-item { background: var(--card); border: 1px solid #333; padding: 15px; border-radius: 6px; box-sizing: border-box; transition: all 0.3s; }
+    .tl-header { font-size: 14px; font-weight: bold; margin-bottom: 8px; display: flex; justify-content: space-between; }
+    .tl-desc { font-size: 13px; line-height: 1.5; word-break: keep-all; }
+
+    /* 상태별 스타일 */
+    .tl-item.completed { border-left: 3px solid #008866; opacity: 0.7; }
+    .tl-item.completed .tl-header { color: #008866; }
+    .tl-item.completed .tl-desc { color: #888; }
+
+    .tl-item.current { border: 1px solid var(--p); border-left: 4px solid var(--p); box-shadow: 0 0 15px rgba(0, 255, 204, 0.15); background: rgba(0, 255, 204, 0.03); }
+    .tl-item.current .tl-header { color: var(--p); text-shadow: 0 0 5px rgba(0,255,204,0.5); }
+    .tl-item.current .tl-desc { color: var(--magenta); background: rgba(255,0,255,0.08); padding: 8px; border-radius: 4px; border-left: 2px solid var(--magenta); margin-bottom: 10px; }
+
+    .tl-item.locked { border-left: 3px solid #333; background: #0a0a0a; opacity: 0.5; }
+    .tl-item.locked .tl-header { color: #555; }
+    .tl-item.locked .tl-desc { display: none; }
+
     /* 경험치 바 */
-    .progress-container { width: 100%; background: #222; border-radius: 10px; height: 12px; margin-bottom: 8px; overflow: hidden; position: relative; }
-    .progress-bar { height: 100%; background: linear-gradient(90deg, var(--p), #00b38f); width: 0%; transition: width 1s ease-in-out; box-shadow: 0 0 10px var(--p); }
+    .progress-container { width: 100%; background: #222; border-radius: 10px; height: 10px; margin-bottom: 6px; overflow: hidden; position: relative; }
+    .progress-bar { height: 100%; background: linear-gradient(90deg, var(--p), #00b38f); width: 0%; box-shadow: 0 0 10px var(--p); }
     .next-target { text-align: right; font-size: 11px; color: #888; }
     .next-target span { color: var(--p); font-weight: bold; }
+
+    /* 스크롤바 커스텀 */
+    .timeline-container::-webkit-scrollbar { width: 4px; }
+    .timeline-container::-webkit-scrollbar-track { background: #111; border-radius: 4px; }
+    .timeline-container::-webkit-scrollbar-thumb { background: var(--p); border-radius: 4px; }
 
     .btn-solve { background: transparent; color: var(--p); border: 1px solid var(--p); padding: 14px; width: 100%; max-width: 400px; border-radius: 6px; font-size: 15px; font-weight: bold; cursor: pointer; transition: 0.2s; letter-spacing: 1px; margin-bottom: 10px; }
     .btn-solve:active { background: rgba(0, 255, 204, 0.1); }
@@ -51,7 +70,7 @@
 
   <div id="lockScreen" class="lock-screen">
     <div class="lock-title">[ 금일 시스템 점검 완료 ]</div>
-    <div class="lock-msg">오늘의 금연 실적이 유지되어 하드웨어 회복이 진행 중입니다.<br>강력한 퍼포먼스를 위해 계속 유지하십시오.</div>
+    <div class="lock-msg">오늘의 금연 실적이 유지되어 하드웨어 복구가 진행 중입니다.<br>강력한 퍼포먼스를 위해 계속 유지하십시오.</div>
     <button style="background:var(--p); color:#000; padding:10px 20px; border:none; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="goHome()">메인으로 복귀</button>
   </div>
 
@@ -63,19 +82,8 @@
       <div class="money-value">누적 절약 자금: <span id="moneySaved">0</span> 원</div>
     </div>
     
-    <div class="health-card">
-      <div class="health-header">
-        <span>[ PHYSICAL STATUS ]</span>
-        <span id="levelBadge">LEVEL 1</span>
+    <div class="timeline-container" id="timelineContainer">
       </div>
-      <div class="current-stage" id="currentStageTitle">데이터 로딩 중...</div>
-      <div class="humor-desc" id="currentHumorDesc">데이터 로딩 중...</div>
-      
-      <div class="progress-container">
-        <div class="progress-bar" id="progressBar"></div>
-      </div>
-      <div class="next-target" id="nextTargetText">다음 목표 분석 중...</div>
-    </div>
 
     <button class="btn-solve" id="btnSuccess" onclick="confirmSuccess()">[ 오늘도 완벽하게 참아냄 ]</button>
     <button class="btn-fail" id="btnReset" onclick="confirmReset()">[ 시스템 경고: 흡연함 (초기화) ]</button>
@@ -84,18 +92,17 @@
 
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyuMPRaNEUCrr3FLjPDuQBgdOM1GTsPD8KG9g1-AN01NPv9k75VqIGSEXggUvavniyh/exec";
-    const CIGARETTE_PRICE = 4500; // 1갑 기준 금액 (필요시 수정)
+    const CIGARETTE_PRICE = 4500; 
 
-    // 생체 회복 & 남성 퍼포먼스 타임라인 DB
+    // 도발적이고 유머러스한 하드웨어 은유 타임라인
     const timeline = [
-      { days: 0, title: "시스템 부팅 중", desc: "독소 배출 준비. 아직 파이프라인에 찌꺼기가 남아있습니다." },
-      { days: 1, title: "혈중 일산화탄소 정상화", desc: "막혔던 하단 파이프라인 청소 돌입. 혈류량 증가 엔진 가동 시작." },
-      { days: 3, title: "체내 니코틴 100% 배출", desc: "혈관 내 찌꺼기 완벽 제거. 말초 신경 예민도 및 터치 반응속도 정상화." },
-      { days: 14, title: "혈액순환 대폭 개선", desc: "하체로 가는 혈류 고속도로 개통. 강직도 및 지속력 1차 부스트 가동." },
-      { days: 30, title: "폐활량 30% 증가 및 심폐 회복", desc: "엔진 출력 급상승. 실전에서의 심폐 지구력 및 퍼포먼스 수직 상승." },
-      { days: 100, title: "혈관 내피세포 기능 정상화", desc: "터보 엔진 장착 완료. 20대 시절의 하드웨어 스펙으로 롤백 진행 중." },
-      { days: 365, title: "심혈관 질환 위험 50% 감소", desc: "강철 체력 및 무한 동력 완성. 파트너가 경이로움을 표할 절대적 퍼포먼스 탑재." },
-      { days: 1825, title: "뇌졸중 위험 비흡연자 수준", desc: "완전 무결점 하드웨어. 전설적인 퍼포먼스의 영구적 유지." }
+      { days: 1, title: "하부 배관 스케일링 착수", desc: "굳게 닫혀있던 수문이 미세하게 열리며 혈류 엔진에 시동이 걸립니다." },
+      { days: 3, title: "말초신경 센서 영점 조절", desc: "스치기만 해도 반응하던 20대 시절의 예민한 센서가 다시 깨어납니다." },
+      { days: 14, title: "하반신 8차선 고속도로 개통", desc: "하체 직통 혈류망 뚫림. 아침을 맞이하는 텐트의 장력이 눈에 띄게 팽팽해집니다." },
+      { days: 30, title: "메인 엔진 터보차저 가동", desc: "거친 숨소리 없이 밤새도록 피스톤 운동을 지속할 수 있는 무한 동력이 확보됩니다." },
+      { days: 100, title: "유압 시스템 100% 복구", desc: "어떠한 악조건 속에서도 강철 같은 텐션을 유지하는 '명검'으로 제련되었습니다." },
+      { days: 365, title: "전설의 하드웨어 스펙 달성", desc: "파트너의 다리가 풀리게 만드는 압도적인 퍼포먼스와 무자비한 회복력을 장착했습니다." },
+      { days: 1825, title: "신체의 모든 봉인 해제", desc: "더 이상의 설명은 생략합니다. 당신은 이제 완벽한 밤의 지배자입니다." }
     ];
 
     window.onload = function() {
@@ -109,24 +116,29 @@
           }
 
           if (!d.vitalityStartDate) {
-            showCustomModal("설정 오류", "구글 시트 '기준정보' 탭에 '금연시작일'이 설정되어 있지 않습니다.<br>(예: 2026-01-01 형식으로 입력)", false, goHome);
+            showCustomModal("설정 오류", "구글 시트 '기준정보' 탭에 '금연시작일'이 설정되어 있지 않습니다.", false, goHome);
             return;
           }
 
-          renderVitalityData(d.vitalityStartDate);
+          renderTimeline(d.vitalityStartDate);
           
           document.getElementById('loading').style.display = 'none';
           document.getElementById('main').style.display = 'flex';
+          
+          // 현재 진행 중인 카드로 자동 스크롤
+          setTimeout(() => {
+            const currentEl = document.querySelector('.tl-item.current');
+            if(currentEl) currentEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }, 300);
         })
         .catch(err => {
           document.getElementById('loading').innerText = "통신 오류가 발생했습니다."; 
         });
     };
 
-    function renderVitalityData(startDateStr) {
+    function renderTimeline(startDateStr) {
       const startDate = new Date(startDateStr);
       const today = new Date();
-      // 날짜 차이 계산 (KST 기준 자정 보정)
       startDate.setHours(0,0,0,0);
       today.setHours(0,0,0,0);
       
@@ -138,37 +150,65 @@
       document.getElementById('daysCount').innerText = `${diffDays}일 차 달성`;
       document.getElementById('moneySaved').innerText = savedMoney.toLocaleString();
 
-      // 현재 단계 파악 로직
       let currentStageIndex = 0;
       for (let i = 0; i < timeline.length; i++) {
-        if (diffDays >= timeline[i].days) {
-          currentStageIndex = i;
+        if (diffDays >= timeline[i].days) currentStageIndex = i;
+        else break;
+      }
+
+      const container = document.getElementById('timelineContainer');
+      let htmlContent = '';
+
+      for (let i = 0; i < timeline.length; i++) {
+        const stage = timeline[i];
+
+        if (i < currentStageIndex) {
+          // 이미 지나간 완료 레벨
+          htmlContent += `
+            <div class="tl-item completed">
+              <div class="tl-header"><span>✅ LEVEL ${i+1}</span><span>D+${stage.days}</span></div>
+              <div class="tl-desc">${stage.title}</div>
+            </div>
+          `;
+        } else if (i === currentStageIndex) {
+          // 현재 머물고 있는 레벨 (경험치 바 포함)
+          const nextStage = timeline[i+1];
+          let progressHtml = '';
+          
+          if (nextStage) {
+            const daysInStage = nextStage.days - stage.days;
+            const daysPassedInStage = diffDays - stage.days;
+            const progressPercent = Math.min(100, Math.max(0, (daysPassedInStage / daysInStage) * 100));
+            const daysLeft = nextStage.days - diffDays;
+            
+            progressHtml = `
+              <div class="progress-container">
+                <div class="progress-bar" style="width:${progressPercent}%"></div>
+              </div>
+              <div class="next-target">다음 진화까지 <span>D-${daysLeft}</span></div>
+            `;
+          } else {
+            progressHtml = `<div class="next-target"><span>최종 하드웨어 진화 완료</span></div>`;
+          }
+
+          htmlContent += `
+            <div class="tl-item current">
+              <div class="tl-header"><span>🔥 LEVEL ${i+1} : ${stage.title}</span></div>
+              <div class="tl-desc">"${stage.desc}"</div>
+              ${progressHtml}
+            </div>
+          `;
         } else {
-          break;
+          // 아직 도달하지 못한 잠금 레벨
+          htmlContent += `
+            <div class="tl-item locked">
+              <div class="tl-header"><span>🔒 LEVEL ${i+1} : 봉인 해제 대기 중</span><span>목표 D+${stage.days}</span></div>
+            </div>
+          `;
         }
       }
 
-      const currentStage = timeline[currentStageIndex];
-      const nextStage = currentStageIndex < timeline.length - 1 ? timeline[currentStageIndex + 1] : null;
-
-      document.getElementById('levelBadge').innerText = `LEVEL ${currentStageIndex + 1}`;
-      document.getElementById('currentStageTitle').innerText = `✅ ${currentStage.title}`;
-      document.getElementById('currentHumorDesc').innerText = `"${currentStage.desc}"`;
-
-      // 경험치 바(Progress Bar) 계산
-      if (nextStage) {
-        const daysInStage = nextStage.days - currentStage.days;
-        const daysPassedInStage = diffDays - currentStage.days;
-        const progressPercent = Math.min(100, Math.max(0, (daysPassedInStage / daysInStage) * 100));
-        
-        document.getElementById('progressBar').style.width = `${progressPercent}%`;
-        
-        const daysLeft = nextStage.days - diffDays;
-        document.getElementById('nextTargetText').innerHTML = `다음 목표: <span>${nextStage.title}</span> (D-${daysLeft})`;
-      } else {
-        document.getElementById('progressBar').style.width = `100%`;
-        document.getElementById('nextTargetText').innerHTML = `<span>최종 진화 완료 (MAX LEVEL)</span>`;
-      }
+      container.innerHTML = htmlContent;
     }
 
     function confirmSuccess() {
@@ -228,7 +268,7 @@
       .then(data => {
         document.body.style.cursor = 'default';
         if(data.success) {
-          logVitality('실패'); // 데이터 로그에도 실패로 기록하여 통계에 반영
+          logVitality('실패'); 
           showCustomModal("초기화 완료", "모든 파이프라인이 리셋되었습니다. 오늘부터 다시 시스템을 재가동합니다.", false, goHome);
         } else {
           showCustomModal("오류", "초기화 실패: " + data.error, false);
