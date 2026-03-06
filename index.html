@@ -17,27 +17,42 @@
     h1 { margin: 0; font-size: 1.5rem; color: var(--neon-mint); letter-spacing: 3px; text-shadow: 0 0 10px rgba(0,255,204,0.3); }
     .subtitle { font-size: 0.8rem; color: var(--text-dim); margin-top: 5px; letter-spacing: 1px; }
 
-    /* 레이더 차트 컨테이너 */
     .chart-container {
       width: 100%; max-width: 320px; height: 320px; background: var(--card-bg);
       border-radius: 10px; border: 1px solid #222; display: flex; justify-content: center; align-items: center;
-      margin-bottom: 30px; position: relative; box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+      margin-bottom: 25px; position: relative; box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
     }
     canvas { display: block; }
 
-    /* 네비게이션 버튼 그리드 */
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; max-width: 320px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; max-width: 320px; }
     
     .module-btn {
-      background: #1a1a1a; color: var(--neon-mint); border: 1px solid #333; padding: 18px 0;
-      border-radius: 8px; text-align: center; text-decoration: none; font-weight: bold; font-size: 1rem;
-      letter-spacing: 1px; transition: all 0.3s; position: relative; overflow: hidden;
+      background: #1a1a1a; color: var(--neon-mint); border: 1px solid #333; padding: 15px 0;
+      border-radius: 8px; text-align: center; text-decoration: none; font-weight: bold; font-size: 0.95rem;
+      letter-spacing: 1px; transition: all 0.3s; position: relative; overflow: hidden; line-height: 1.4;
     }
+    .module-btn span.kor { font-size: 0.8rem; color: #fff; display: block; margin-bottom: 3px; }
     .module-btn:active { transform: scale(0.95); }
     .module-btn.locked { color: #555; border-color: #222; background: #0a0a0a; pointer-events: none; }
+    .module-btn.locked span.kor { color: #555; }
     .module-btn.locked::after {
-      content: 'COMPLETED'; position: absolute; bottom: 5px; left: 0; right: 0; font-size: 0.6rem; color: #444;
+      content: 'COMPLETED'; position: absolute; bottom: 3px; left: 0; right: 0; font-size: 0.6rem; color: #444;
     }
+
+    .report-btn {
+      background: transparent; color: #aaa; border: 1px dashed #444; padding: 12px;
+      border-radius: 8px; text-align: center; font-size: 0.9rem; font-weight: bold;
+      width: 100%; max-width: 320px; margin-top: 20px; cursor: pointer; transition: 0.2s;
+    }
+    .report-btn:active { background: #222; }
+
+    #report-section {
+      width: 100%; max-width: 320px; margin-top: 15px; background: var(--card-bg);
+      border: 1px solid #333; border-radius: 8px; padding: 15px; box-sizing: border-box; display: none;
+    }
+    .report-title { font-size: 0.9rem; color: var(--neon-mint); font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px; }
+    .report-row { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 5px; color: #ccc; }
+    .report-row span.val { color: #fff; font-weight: bold; }
 
     #loading { color: var(--neon-mint); font-weight: bold; margin-top: 50px; letter-spacing: 2px; }
   </style>
@@ -58,26 +73,36 @@
     </div>
 
     <div class="grid">
-      <a href="strength.html" class="module-btn" id="btn-strength">STRENGTH</a>
-      <a href="stamina.html" class="module-btn" id="btn-stamina">STAMINA</a>
-      <a href="reading.html" class="module-btn" id="btn-intellect">INTELLECT</a>
-      <a href="charm.html" class="module-btn" id="btn-charm">CHARM</a>
-      <a href="vitality.html" class="module-btn" id="btn-vitality">VITALITY</a>
-      <a href="legal.html" class="module-btn" id="btn-legal">LEGAL</a>
+      <a href="strength.html" class="module-btn" id="btn-strength"><span class="kor">[ 근력 ]</span>STRENGTH</a>
+      <a href="stamina.html" class="module-btn" id="btn-stamina"><span class="kor">[ 체력 ]</span>STAMINA</a>
+      <a href="intellect.html" class="module-btn" id="btn-intellect"><span class="kor">[ 독서 ]</span>INTELLECT</a>
+      <a href="charm.html" class="module-btn" id="btn-charm"><span class="kor">[ 매력 ]</span>CHARM</a>
+      <a href="vitality.html" class="module-btn" id="btn-vitality"><span class="kor">[ 활력 ]</span>VITALITY</a>
+      <a href="legal.html" class="module-btn" id="btn-legal"><span class="kor">[ 법력 ]</span>LEGAL</a>
+    </div>
+
+    <div class="report-btn" onclick="toggleReport()">[ 리포트 및 통계 열람 ]</div>
+
+    <div id="report-section">
+      <div class="report-title">주간 및 월간 훈련 실적</div>
+      <div id="report-content"></div>
     </div>
 
   </div>
 
   <script>
     const GAS_URL = "https://script.google.com/macros/s/AKfycbyuMPRaNEUCrr3FLjPDuQBgdOM1GTsPD8KG9g1-AN01NPv9k75VqIGSEXggUvavniyh/exec";
+    let dashboardStats = null;
 
     window.onload = function() {
       fetch(GAS_URL + "?action=getDashboardData")
         .then(res => res.json())
         .then(data => {
           if(data.success) {
+            dashboardStats = data.stats;
             applyLocks(data.locks);
             drawHexagonChart(data.yearlyStats, data.targets);
+            renderReport();
             document.getElementById('loading').style.display = 'none';
             document.getElementById('dashboard').style.display = 'flex';
           } else {
@@ -97,7 +122,35 @@
       if(locks.legal) document.getElementById('btn-legal').classList.add('locked');
     }
 
-    // 캔버스 레이더 차트 렌더링 (오버클럭 엔진 포함)
+    function toggleReport() {
+      const reportDiv = document.getElementById('report-section');
+      if(reportDiv.style.display === 'none' || reportDiv.style.display === '') {
+        reportDiv.style.display = 'block';
+      } else {
+        reportDiv.style.display = 'none';
+      }
+    }
+
+    function renderReport() {
+      if(!dashboardStats) return;
+      const content = document.getElementById('report-content');
+      
+      let html = `<div class="report-row" style="margin-top:10px; border-bottom:1px dashed #333; padding-bottom:5px;"><span>[ 최근 7일 종합 달성 ]</span><span class="val">${dashboardStats['주간'].total} 회</span></div>`;
+      for(let cat in dashboardStats['주간'].cat) {
+        if(dashboardStats['주간'].cat[cat] > 0) {
+          html += `<div class="report-row"><span>- ${cat}</span><span class="val">${dashboardStats['주간'].cat[cat]}</span></div>`;
+        }
+      }
+      
+      html += `<div class="report-row" style="margin-top:15px; border-bottom:1px dashed #333; padding-bottom:5px;"><span>[ 최근 30일 종합 달성 ]</span><span class="val">${dashboardStats['월간'].total} 회</span></div>`;
+      for(let cat in dashboardStats['월간'].cat) {
+        if(dashboardStats['월간'].cat[cat] > 0) {
+          html += `<div class="report-row"><span>- ${cat}</span><span class="val">${dashboardStats['월간'].cat[cat]}</span></div>`;
+        }
+      }
+      content.innerHTML = html;
+    }
+
     function drawHexagonChart(stats, targets) {
       const canvas = document.getElementById('radarChart');
       const ctx = canvas.getContext('2d');
@@ -105,13 +158,11 @@
 
       const cx = canvas.width / 2;
       const cy = canvas.height / 2 + 10;
-      const R = 90; // 100% 한계선 반지름
+      const R = 90; 
 
-      // 시계 방향: 12시부터
       const categories = ['근력', '체력', '매력', '활력', '법력', '독서'];
       const angles = [-Math.PI/2, -Math.PI/6, Math.PI/6, Math.PI/2, 5*Math.PI/6, 7*Math.PI/6];
 
-      // 1. 배경 가이드라인 (거미줄) 그리기
       ctx.strokeStyle = '#222';
       ctx.lineWidth = 1;
       for (let level = 0.2; level <= 1.0; level += 0.2) {
@@ -126,7 +177,6 @@
         ctx.stroke();
       }
 
-      // 2. 축 및 텍스트 라벨 그리기
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       for (let i = 0; i < 6; i++) {
@@ -149,13 +199,12 @@
         ctx.fillText(`${statVal} / ${targetVal}`, labelX, labelY + 8);
       }
 
-      // 3. 누적 데이터 폴리곤(도형) 그리기
       ctx.beginPath();
       let points = [];
       for (let i = 0; i < 6; i++) {
         let cat = categories[i];
         let ratio = (stats[cat] || 0) / (targets[cat] || 1);
-        let drawRatio = ratio; // 초과 달성 시 100% 범위를 뚫고 나감
+        let drawRatio = ratio; 
         
         let px = cx + R * drawRatio * Math.cos(angles[i]);
         let py = cy + R * drawRatio * Math.sin(angles[i]);
@@ -172,25 +221,22 @@
       ctx.lineWidth = 1.5;
       ctx.stroke();
 
-      // 4. 오버클럭(초과 달성) 노드 발광 효과
       for (let i = 0; i < 6; i++) {
         let p = points[i];
         ctx.beginPath();
         ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
         
         if (p.ratio >= 1.0) {
-          // 목표 달성 및 초과 시: 황금색(Gold) 발광 효과
           ctx.fillStyle = 'var(--neon-gold)';
           ctx.shadowColor = 'var(--neon-gold)';
           ctx.shadowBlur = 15;
           ctx.fill();
         } else {
-          // 진행 중: 기본 민트색
           ctx.fillStyle = 'var(--neon-mint)';
           ctx.shadowBlur = 0;
           ctx.fill();
         }
-        ctx.shadowBlur = 0; // 초기화
+        ctx.shadowBlur = 0; 
       }
     }
   </script>
