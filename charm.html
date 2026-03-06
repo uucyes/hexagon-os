@@ -17,13 +17,18 @@
             font-family: 'Courier New', Courier, monospace; display: flex; flex-direction: column;
             height: 100vh; overflow: hidden;
         }
-        header {
-            padding: 20px; text-align: center; border-bottom: 1px solid var(--neon-mint);
-            box-shadow: 0 0 10px rgba(0, 255, 204, 0.2);
-            position: relative;
+        
+        /* 표준 헤더 규격 적용 (charm 모듈 화면 밸런스에 맞춰 여백 조정) */
+        .header { 
+            width: 100%; 
+            max-width: 400px; 
+            display: flex; 
+            justify-content: space-between; 
+            margin: 15px auto 20px auto; 
+            border-bottom: 1px solid #333; 
+            padding: 0 20px 10px 20px; 
+            box-sizing: border-box; 
         }
-        h1 { margin: 0; font-size: 1.2rem; color: var(--neon-mint); text-shadow: 0 0 5px var(--neon-mint); letter-spacing: 2px; }
-        .exit-btn { position: absolute; right: 20px; top: 20px; color: var(--text-dim); cursor: pointer; font-size: 0.9rem; }
         
         .phase-indicator {
             display: flex; justify-content: space-around; padding: 12px 0; background: #111;
@@ -79,10 +84,10 @@
 </head>
 <body>
 
-    <header>
-        <h1>CHAMING.OS</h1>
-        <div class="exit-btn" onclick="window.location.href='index.html'">[ EXIT ]</div>
-    </header>
+    <div class="header">
+        <b style="letter-spacing:2px; color:var(--neon-mint);">CHARM.OS</b>
+        <span onclick="window.location.href='index.html'" style="color:#888; cursor:pointer;">[ EXIT ]</span>
+    </div>
     
     <div class="phase-indicator">
         <span id="nav-p1" class="active">P1:VOCA</span>
