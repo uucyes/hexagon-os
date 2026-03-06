@@ -3,253 +3,196 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#050505">
-<meta name="mobile-web-app-capable" content="yes">
-  <title>HEXAGON.OS - COMMAND CENTER</title>
-  <link rel="manifest" href="manifest.json">
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-          .then(reg => console.log('Service Worker Registered'))
-          .catch(err => console.log('Service Worker Registration Failed', err));
-      });
-    }
-  </script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <title>HEXAGON.OS</title>
   <style>
-    :root { --p: #00ffcc; --bg: #050505; --card: #141414; --border: #333; --text: #fff; --mute: #666; }
-    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
-    .header { width: 100%; max-width: 420px; text-align: center; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 20px; font-size: 20px; font-weight: 900; letter-spacing: 4px; color: var(--p); }
+    :root {
+      --bg-color: #050505; --neon-mint: #00ffcc; --neon-gold: #ffd700;
+      --text-main: #ffffff; --text-dim: #888888; --card-bg: #141414;
+    }
+    body {
+      margin: 0; padding: 20px; background-color: var(--bg-color); color: var(--text-main);
+      font-family: 'Courier New', Courier, monospace; display: flex; flex-direction: column; align-items: center;
+    }
+    header { text-align: center; margin-bottom: 20px; width: 100%; border-bottom: 1px solid #333; padding-bottom: 15px; }
+    h1 { margin: 0; font-size: 1.5rem; color: var(--neon-mint); letter-spacing: 3px; text-shadow: 0 0 10px rgba(0,255,204,0.3); }
+    .subtitle { font-size: 0.8rem; color: var(--text-dim); margin-top: 5px; letter-spacing: 1px; }
 
-    .chart-container { width: 100%; max-width: 350px; aspect-ratio: 1; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 15px; box-sizing: border-box; margin-bottom: 20px; box-shadow: 0 0 20px rgba(0, 255, 204, 0.05); }
+    /* 레이더 차트 컨테이너 */
+    .chart-container {
+      width: 100%; max-width: 320px; height: 320px; background: var(--card-bg);
+      border-radius: 10px; border: 1px solid #222; display: flex; justify-content: center; align-items: center;
+      margin-bottom: 30px; position: relative; box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+    }
+    canvas { display: block; }
 
-    /* [Daily HUD] 상단 3x2 배열 유지 */
-    .hud-container { width: 100%; max-width: 420px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
-    .hud-box { background: #111; border: 1px solid var(--border); border-radius: 6px; padding: 10px; text-align: center; font-size: 13px; font-weight: bold; color: var(--mute); transition: 0.3s; cursor: pointer; }
-    .hud-box.on { border-color: var(--p); color: #000; background: var(--p); box-shadow: 0 0 10px rgba(0, 255, 204, 0.4); }
-
-    /* 피드백 컨트롤 패널 */
-    .control-panel { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 10px; margin-bottom: 30px; }
-    .btn-action { background: transparent; border: 1px solid var(--p); color: var(--p); padding: 14px; border-radius: 6px; font-weight: bold; font-size: 14px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; transition: 0.2s; }
-    .btn-action:active { background: var(--p); color: #000; }
+    /* 네비게이션 버튼 그리드 */
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; max-width: 320px; }
     
-    .ai-group { display: flex; gap: 5px; }
-    .btn-ai { flex: 1; background: #111; border: 1px solid #555; color: #aaa; padding: 12px; border-radius: 6px; font-weight: bold; font-size: 13px; cursor: pointer; }
-    .btn-ai:active { background: #333; }
+    .module-btn {
+      background: #1a1a1a; color: var(--neon-mint); border: 1px solid #333; padding: 18px 0;
+      border-radius: 8px; text-align: center; text-decoration: none; font-weight: bold; font-size: 1rem;
+      letter-spacing: 1px; transition: all 0.3s; position: relative; overflow: hidden;
+    }
+    .module-btn:active { transform: scale(0.95); }
+    .module-btn.locked { color: #555; border-color: #222; background: #0a0a0a; pointer-events: none; }
+    .module-btn.locked::after {
+      content: 'COMPLETED'; position: absolute; bottom: 5px; left: 0; right: 0; font-size: 0.6rem; color: #444;
+    }
 
-    /* 모달 레이어 */
-    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 999; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
-    .modal-content { background: var(--card); border: 1px solid var(--border); border-top: 4px solid var(--p); border-radius: 8px; padding: 20px; width: 100%; max-width: 420px; max-height: 80vh; overflow-y: auto; }
-    .modal-title { font-size: 16px; font-weight: bold; color: var(--p); margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; }
-    .modal-body { font-size: 14px; line-height: 1.6; color: #ccc; margin-bottom: 20px; word-break: keep-all; white-space: pre-wrap; }
-    .modal-close { width: 100%; background: #333; color: #fff; border: none; padding: 12px; border-radius: 4px; font-weight: bold; cursor: pointer; }
-    
-    .modal-input { width: 100%; background: #000; border: 1px solid #444; color: #fff; padding: 12px; border-radius: 4px; box-sizing: border-box; margin-bottom: 20px; }
-    .modal-btn { width: 100%; background: var(--p); border: none; color: #000; font-weight: bold; padding: 12px; border-radius: 4px; cursor: pointer; }
-
-    /* 그리드 매트릭스 테이블 */
-    .grid-table { width: 100%; border-collapse: collapse; font-size: 11px; color: #888; text-align: center; }
-    .grid-table th { padding: 5px; font-weight: normal; border-bottom: 1px solid #333; }
-    .grid-table td { padding: 4px; }
-    .grid-cell { width: 14px; height: 14px; background: #222; border-radius: 2px; display: inline-block; }
-    .grid-cell.lv1 { background: rgba(0, 255, 204, 0.4); }
-    .grid-cell.lv2 { background: rgba(0, 255, 204, 0.7); }
-    .grid-cell.lv3 { background: rgba(0, 255, 204, 1.0); box-shadow: 0 0 5px var(--p); }
-
-    #loading { color: var(--p); font-weight: bold; text-align: center; padding: 50px; }
+    #loading { color: var(--neon-mint); font-weight: bold; margin-top: 50px; letter-spacing: 2px; }
   </style>
 </head>
 <body>
 
-  <div class="header">HEXAGON.OS</div>
+  <header>
+    <h1>HEXAGON.OS</h1>
+    <div class="subtitle">ANNUAL PROGRESS TRACKER</div>
+  </header>
 
-  <div id="loading">서버 통신망 연결 및 데이터 동기화 중...</div>
+  <div id="loading">SYNCHRONIZING DATA...</div>
 
-  <div id="mainDashboard" style="display:none; width:100%; flex-direction:column; align-items:center;">
+  <div id="dashboard" style="display:none; width:100%; flex-direction:column; align-items:center;">
+    
     <div class="chart-container">
-      <canvas id="radarChart"></canvas>
+      <canvas id="radarChart" width="300" height="300"></canvas>
     </div>
 
-    <div style="width:100%; max-width:420px; font-size:12px; color:var(--p); margin-bottom:10px; font-weight:bold;">[ DAILY STATUS ]</div>
-    <div class="hud-container" id="hudContainer">
-      <div class="hud-box" id="hud-strength" onclick="nav('strength.html')">근력 (STR)</div>
-      <div class="hud-box" id="hud-charm" onclick="nav('charm.html')">매력 (CHM)</div>
-      <div class="hud-box" id="hud-stamina" onclick="nav('stamina.html')">체력 (STA)</div>
-      <div class="hud-box" id="hud-intellect" onclick="nav('intellect.html')">지력 (INT)</div>
-      <div class="hud-box" id="hud-vitality" onclick="nav('vitality.html')">활력 (VIT)</div>
-      <div class="hud-box" id="hud-legal" onclick="nav('legal.html')">법력 (LGL)</div>
+    <div class="grid">
+      <a href="strength.html" class="module-btn" id="btn-strength">STRENGTH</a>
+      <a href="stamina.html" class="module-btn" id="btn-stamina">STAMINA</a>
+      <a href="reading.html" class="module-btn" id="btn-intellect">INTELLECT</a>
+      <a href="charm.html" class="module-btn" id="btn-charm">CHARM</a>
+      <a href="vitality.html" class="module-btn" id="btn-vitality">VITALITY</a>
+      <a href="legal.html" class="module-btn" id="btn-legal">LEGAL</a>
     </div>
 
-    <div style="width:100%; max-width:420px; font-size:12px; color:#aaa; margin-bottom:10px; font-weight:bold;">[ DATA & STRATEGY ]</div>
-    <div class="control-panel">
-      <button class="btn-action" onclick="showGrid()">데이터 매트릭스 (최근 14일)</button>
-      <div class="ai-group">
-        <button class="btn-ai" onclick="requestAI('일간')">일간 마감 브리핑</button>
-        <button class="btn-ai" onclick="requestAI('주간')">주간 동향 분석</button>
-        <button class="btn-ai" onclick="requestAI('월간')">월간 전략 평가</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal-overlay" id="gridModal">
-    <div class="modal-content">
-      <div class="modal-title">누적 성취도 매트릭스 (최근 14일)</div>
-      <div style="overflow-x:auto; margin-bottom:20px;">
-        <table class="grid-table" id="gridTable"></table>
-      </div>
-      <button class="modal-close" onclick="closeModal('gridModal')">닫기</button>
-    </div>
-  </div>
-
-  <div class="modal-overlay" id="aiModal">
-    <div class="modal-content">
-      <div class="modal-title" id="aiTitle">AI 전략 브리핑</div>
-      <div class="modal-body" id="aiBody">데이터를 분석하고 있습니다...</div>
-      <button class="modal-close" onclick="closeModal('aiModal')">확인 및 종료</button>
-    </div>
-  </div>
-
-  <div class="modal-overlay" id="apiKeyModal">
-    <div class="modal-content">
-      <div class="modal-title">AI 보안 인증 (최초 1회)</div>
-      <div class="modal-body">Gemini 2.5 API 키를 입력해 주십시오. (기기 내부에만 안전하게 저장됩니다.)</div>
-      <input type="text" id="apiKeyInput" class="modal-input" placeholder="AIzaSy...">
-      <button class="modal-btn" onclick="saveApiKey()">인증 및 저장</button>
-    </div>
   </div>
 
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbyuMPRaNEUCrr3FLjPDuQBgdOM1GTsPD8KG9g1-AN01NPv9k75VqIGSEXggUvavniyh/exec";
-    const API_STORAGE_KEY = 'hexagon_gemini_api_key';
-
-    let myChart = null;
-    let globalGridData = null;
-    let globalLabels = null;
-    let globalStats = null;
-    let pendingAIType = null;
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbyuMPRaNEUCrr3FLjPDuQBgdOM1GTsPD8KG9g1-AN01NPv9k75VqIGSEXggUvavniyh/exec";
 
     window.onload = function() {
-      fetch(API_URL + "?action=getDashboardData")
-        .then(response => response.json())
-        .then(res => {
-          if(!res.success) { alert("데이터 로드 실패: " + res.error); return; }
-          
-          document.getElementById('loading').style.display = 'none';
-          document.getElementById('mainDashboard').style.display = 'flex';
-
-          const ctx = document.getElementById('radarChart').getContext('2d');
-          myChart = new Chart(ctx, {
-            type: 'radar',
-            data: {
-              labels: ['근력', '매력', '체력', '독서', '활력', '법력'],
-              datasets: [{
-                data: res.chartData,
-                backgroundColor: 'rgba(0, 255, 204, 0.2)',
-                borderColor: 'rgba(0, 255, 204, 1)',
-                borderWidth: 2,
-                pointBackgroundColor: 'rgba(0, 255, 204, 1)'
-              }]
-            },
-            options: {
-              responsive: true, maintainAspectRatio: false,
-              scales: {
-                r: { min: 0, max: 100, ticks: { display: false }, grid: { color: '#333' }, angleLines: { color: '#333' }, pointLabels: { color: '#fff', font: { size: 12, weight: 'bold' } } }
-              },
-              plugins: { legend: { display: false } }
-            }
-          });
-
-          if(res.locks.strength) document.getElementById('hud-strength').classList.add('on');
-          if(res.locks.charm) document.getElementById('hud-charm').classList.add('on');
-          if(res.locks.stamina) document.getElementById('hud-stamina').classList.add('on');
-          if(res.locks.intellect) document.getElementById('hud-intellect').classList.add('on');
-          if(res.locks.vitality) document.getElementById('hud-vitality').classList.add('on');
-          if(res.locks.legal) document.getElementById('hud-legal').classList.add('on');
-
-          globalGridData = res.grid;
-          globalLabels = res.labels;
-          globalStats = res.stats;
-        })
-        .catch(error => { document.getElementById('loading').innerText = "통신 오류 발생."; });
+      fetch(GAS_URL + "?action=getDashboardData")
+        .then(res => res.json())
+        .then(data => {
+          if(data.success) {
+            applyLocks(data.locks);
+            drawHexagonChart(data.yearlyStats, data.targets);
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'flex';
+          } else {
+            document.getElementById('loading').innerText = "SYSTEM ERROR";
+          }
+        }).catch(() => {
+          document.getElementById('loading').innerText = "NETWORK ERROR";
+        });
     };
 
-    function nav(page) {
-      window.location.href = page;
+    function applyLocks(locks) {
+      if(locks.strength) document.getElementById('btn-strength').classList.add('locked');
+      if(locks.stamina) document.getElementById('btn-stamina').classList.add('locked');
+      if(locks.intellect) document.getElementById('btn-intellect').classList.add('locked');
+      if(locks.charm) document.getElementById('btn-charm').classList.add('locked');
+      if(locks.vitality) document.getElementById('btn-vitality').classList.add('locked');
+      if(locks.legal) document.getElementById('btn-legal').classList.add('locked');
     }
 
-    function showGrid() {
-      if(!globalGridData) return;
-      const table = document.getElementById('gridTable');
-      let html = '<tr><th></th>';
-      globalLabels.forEach(lbl => { html += `<th>${lbl}</th>`; });
-      html += '</tr>';
+    // 캔버스 레이더 차트 렌더링 (오버클럭 엔진 포함)
+    function drawHexagonChart(stats, targets) {
+      const canvas = document.getElementById('radarChart');
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      const cats = ['근력', '매력', '체력', '독서', '법력', '활력'];
-      cats.forEach(cat => {
-        html += `<tr><td style="text-align:left; font-weight:bold; color:#fff;">${cat}</td>`;
-        Object.keys(globalGridData).sort().forEach(dateStr => {
-          let count = globalGridData[dateStr][cat] || 0;
-          let lvClass = '';
-          if(count === 1) lvClass = 'lv1';
-          else if(count === 2) lvClass = 'lv2';
-          else if(count >= 3) lvClass = 'lv3';
-          html += `<td><div class="grid-cell ${lvClass}"></div></td>`;
-        });
-        html += '</tr>';
-      });
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2 + 10;
+      const R = 90; // 100% 한계선 반지름
 
-      table.innerHTML = html;
-      document.getElementById('gridModal').style.display = 'flex';
-    }
+      // 시계 방향: 12시부터
+      const categories = ['근력', '체력', '매력', '활력', '법력', '독서'];
+      const angles = [-Math.PI/2, -Math.PI/6, Math.PI/6, Math.PI/2, 5*Math.PI/6, 7*Math.PI/6];
 
-    function requestAI(type) {
-      const savedKey = localStorage.getItem(API_STORAGE_KEY);
-      if (!savedKey) {
-        pendingAIType = type;
-        document.getElementById('apiKeyModal').style.display = 'flex';
-      } else {
-        executeAIBriefing(savedKey, type);
+      // 1. 배경 가이드라인 (거미줄) 그리기
+      ctx.strokeStyle = '#222';
+      ctx.lineWidth = 1;
+      for (let level = 0.2; level <= 1.0; level += 0.2) {
+        ctx.beginPath();
+        for (let i = 0; i < 6; i++) {
+          let x = cx + R * level * Math.cos(angles[i]);
+          let y = cy + R * level * Math.sin(angles[i]);
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.stroke();
+      }
+
+      // 2. 축 및 텍스트 라벨 그리기
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      for (let i = 0; i < 6; i++) {
+        let x = cx + R * Math.cos(angles[i]);
+        let y = cy + R * Math.sin(angles[i]);
+        ctx.strokeStyle = '#333';
+        ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(x, y); ctx.stroke();
+
+        let labelX = cx + (R + 30) * Math.cos(angles[i]);
+        let labelY = cy + (R + 25) * Math.sin(angles[i]);
+        
+        ctx.font = 'bold 12px sans-serif';
+        ctx.fillStyle = '#888';
+        ctx.fillText(categories[i], labelX, labelY - 8);
+        
+        let statVal = stats[categories[i]] || 0;
+        let targetVal = targets[categories[i]] || 1;
+        ctx.font = '10px Courier New';
+        ctx.fillStyle = 'var(--neon-mint)';
+        ctx.fillText(`${statVal} / ${targetVal}`, labelX, labelY + 8);
+      }
+
+      // 3. 누적 데이터 폴리곤(도형) 그리기
+      ctx.beginPath();
+      let points = [];
+      for (let i = 0; i < 6; i++) {
+        let cat = categories[i];
+        let ratio = (stats[cat] || 0) / (targets[cat] || 1);
+        let drawRatio = ratio; // 초과 달성 시 100% 범위를 뚫고 나감
+        
+        let px = cx + R * drawRatio * Math.cos(angles[i]);
+        let py = cy + R * drawRatio * Math.sin(angles[i]);
+        points.push({x: px, y: py, ratio: ratio});
+        
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      
+      ctx.fillStyle = 'rgba(0, 255, 204, 0.2)';
+      ctx.fill();
+      ctx.strokeStyle = 'var(--neon-mint)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // 4. 오버클럭(초과 달성) 노드 발광 효과
+      for (let i = 0; i < 6; i++) {
+        let p = points[i];
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+        
+        if (p.ratio >= 1.0) {
+          // 목표 달성 및 초과 시: 황금색(Gold) 발광 효과
+          ctx.fillStyle = 'var(--neon-gold)';
+          ctx.shadowColor = 'var(--neon-gold)';
+          ctx.shadowBlur = 15;
+          ctx.fill();
+        } else {
+          // 진행 중: 기본 민트색
+          ctx.fillStyle = 'var(--neon-mint)';
+          ctx.shadowBlur = 0;
+          ctx.fill();
+        }
+        ctx.shadowBlur = 0; // 초기화
       }
     }
-
-    function saveApiKey() {
-      const keyInput = document.getElementById('apiKeyInput').value.trim();
-      if (keyInput === "") { alert("키를 입력하십시오."); return; }
-      localStorage.setItem(API_STORAGE_KEY, keyInput);
-      document.getElementById('apiKeyModal').style.display = 'none';
-      if(pendingAIType) executeAIBriefing(keyInput, pendingAIType);
-    }
-
-    function executeAIBriefing(apiKey, type) {
-      document.getElementById('aiTitle').innerText = `AI 전략 브리핑 (${type})`;
-      document.getElementById('aiBody').innerHTML = `<span style="color:var(--p);">데이터를 분석하고 참모망에 연결 중입니다...</span>`;
-      document.getElementById('aiModal').style.display = 'flex';
-
-      let stats = globalStats[type];
-      let prompt = `당신은 HEXAGON.OS의 수석 전략 AI 참모입니다. 사용자의 ${type} 훈련 데이터를 바탕으로 전략적인 브리핑을 제공하세요.\n`;
-      prompt += `[${type} 데이터 요약]\n- 총 훈련 횟수: ${stats.total}회\n`;
-      prompt += `- 근력: ${stats.cat['근력']}회, 매력: ${stats.cat['매력']}회, 체력: ${stats.cat['체력']}회, 지력(독서): ${stats.cat['독서']}회, 법력: ${stats.cat['법력']}회, 활력: ${stats.cat['활력']}회\n\n`;
-      prompt += `지시사항:\n1. 편향된 부분이나 누락된 부분을 정밀하게 지적하십시오.\n2. 다음 기간의 최우선 과제를 제안하십시오.\n3. 짧고 명확한 비즈니스 어조로 작성하고, 사용자를 '대표님'이라고 호칭하십시오.`;
-
-      const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey;
-      fetch(url, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ "contents": [{ "parts": [{"text": prompt}] }] })
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.candidates && data.candidates.length > 0) {
-          document.getElementById('aiBody').innerHTML = data.candidates[0].content.parts[0].text.replace(/\n/g, "<br>");
-        } else if (data.error) {
-          document.getElementById('aiBody').innerHTML = `<span style="color:var(--danger);">API 통신 거절: ${data.error.message}</span>`;
-          localStorage.removeItem(API_STORAGE_KEY); 
-        }
-      })
-      .catch(err => { document.getElementById('aiBody').innerHTML = `<span style="color:var(--danger);">통신 오류 발생</span>`; });
-    }
-
-    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
   </script>
 </body>
 </html>
