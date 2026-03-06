@@ -5,32 +5,40 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>HEXAGON.OS - VITALITY MODULE</title>
   <style>
-    :root { --p: #00ffcc; --bg: #050505; --card: #141414; --danger: #ff4444; --magenta: #ff00ff; }
+    :root { --p: #00ffcc; --bg: #050505; --card: #141414; --danger: #ff4444; --magenta: #ff00ff; --gold: #ffd700; }
     body { background: var(--bg); color: #fff; font-family: sans-serif; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
     .header { width: 100%; max-width: 400px; display: flex; justify-content: space-between; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; }
     
     .status-box { text-align: center; margin-bottom: 20px; width: 100%; max-width: 400px; }
     .status-title { font-size: 12px; color: #888; letter-spacing: 2px; margin-bottom: 5px; }
     .status-value { font-size: 28px; font-weight: bold; color: var(--p); letter-spacing: 1px; text-shadow: 0 0 10px rgba(0,255,204,0.3); }
-    .money-value { font-size: 16px; color: #aaa; margin-top: 5px; }
+    .money-value { font-size: 16px; color: #aaa; margin-top: 5px; margin-bottom: 15px; }
     .money-value span { color: var(--p); font-weight: bold; }
+
+    /* 재정적 보상(전리품) UI */
+    .reward-box { background: rgba(255, 215, 0, 0.05); border: 1px solid rgba(255, 215, 0, 0.3); padding: 15px; border-radius: 6px; margin-bottom: 20px; }
+    .reward-title { font-size: 11px; color: var(--gold); font-weight: bold; letter-spacing: 1px; margin-bottom: 5px; text-transform: uppercase; }
+    .reward-item { font-size: 16px; font-weight: bold; color: #fff; margin-bottom: 5px; word-break: keep-all; }
+    .reward-next { font-size: 12px; color: #888; }
+    .reward-next span { color: var(--gold); }
 
     /* 누적형 타임라인 컨테이너 */
     .timeline-container { width: 100%; max-width: 400px; max-height: 380px; overflow-y: auto; padding-right: 5px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 12px; }
     
-    /* 타임라인 개별 아이템 디자인 */
     .tl-item { background: var(--card); border: 1px solid #333; padding: 15px; border-radius: 6px; box-sizing: border-box; transition: all 0.3s; }
-    .tl-header { font-size: 14px; font-weight: bold; margin-bottom: 8px; display: flex; justify-content: space-between; }
+    .tl-header { font-size: 14px; font-weight: bold; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
     .tl-desc { font-size: 13px; line-height: 1.5; word-break: keep-all; }
 
     /* 상태별 스타일 */
-    .tl-item.completed { border-left: 3px solid #008866; opacity: 0.7; }
+    .tl-item.completed { border-left: 3px solid #008866; cursor: pointer; }
+    .tl-item.completed:hover { background: #1a1a1a; }
     .tl-item.completed .tl-header { color: #008866; }
-    .tl-item.completed .tl-desc { color: #888; }
+    .tl-item.completed .tl-desc { color: #aaa; background: #111; padding: 10px; border-radius: 4px; margin-top: 10px; border-left: 2px solid #008866; }
+    .click-hint { font-size: 10px; color: #666; font-weight: normal; margin-left: 5px; }
 
     .tl-item.current { border: 1px solid var(--p); border-left: 4px solid var(--p); box-shadow: 0 0 15px rgba(0, 255, 204, 0.15); background: rgba(0, 255, 204, 0.03); }
     .tl-item.current .tl-header { color: var(--p); text-shadow: 0 0 5px rgba(0,255,204,0.5); }
-    .tl-item.current .tl-desc { color: var(--magenta); background: rgba(255,0,255,0.08); padding: 8px; border-radius: 4px; border-left: 2px solid var(--magenta); margin-bottom: 10px; }
+    .tl-item.current .tl-desc { color: var(--magenta); background: rgba(255,0,255,0.08); padding: 10px; border-radius: 4px; border-left: 2px solid var(--magenta); margin-bottom: 10px; font-weight: bold; }
 
     .tl-item.locked { border-left: 3px solid #333; background: #0a0a0a; opacity: 0.5; }
     .tl-item.locked .tl-header { color: #555; }
@@ -42,7 +50,6 @@
     .next-target { text-align: right; font-size: 11px; color: #888; }
     .next-target span { color: var(--p); font-weight: bold; }
 
-    /* 스크롤바 커스텀 */
     .timeline-container::-webkit-scrollbar { width: 4px; }
     .timeline-container::-webkit-scrollbar-track { background: #111; border-radius: 4px; }
     .timeline-container::-webkit-scrollbar-thumb { background: var(--p); border-radius: 4px; }
@@ -80,6 +87,12 @@
       <div class="status-title">NO SMOKING RECORD</div>
       <div class="status-value" id="daysCount">0일 차 달성</div>
       <div class="money-value">누적 절약 자금: <span id="moneySaved">0</span> 원</div>
+      
+      <div class="reward-box">
+        <div class="reward-title">현재 획득 가능한 전리품</div>
+        <div class="reward-item" id="rewardItem">계산 중...</div>
+        <div class="reward-next" id="rewardNext">다음 목표 계산 중...</div>
+      </div>
     </div>
     
     <div class="timeline-container" id="timelineContainer">
@@ -93,6 +106,21 @@
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyuMPRaNEUCrr3FLjPDuQBgdOM1GTsPD8KG9g1-AN01NPv9k75VqIGSEXggUvavniyh/exec";
     const CIGARETTE_PRICE = 4500; 
+
+    // 금액별 명품/전리품 리스트
+    const rewardTiers = [
+      { price: 0, name: "건강한 폐 한 모금" },
+      { price: 5000, name: "스타벅스 프리미엄 커피" },
+      { price: 30000, name: "프리미엄 배달 식사" },
+      { price: 100000, name: "고급 니치 향수" },
+      { price: 300000, name: "5성급 호텔 오마카세 2인권" },
+      { price: 500000, name: "최신형 노이즈캔슬링 이어폰" },
+      { price: 1000000, name: "보테가베네타 명품 지갑" },
+      { price: 3000000, name: "최고급 맞춤형 테일러 정장" },
+      { price: 5000000, name: "오메가 / 태그호이어 명품 시계" },
+      { price: 10000000, name: "유럽 비즈니스석 왕복 항공권" },
+      { price: 50000000, name: "고급 수입 스포츠카 계약금" }
+    ];
 
     // 도발적이고 유머러스한 하드웨어 은유 타임라인
     const timeline = [
@@ -120,12 +148,11 @@
             return;
           }
 
-          renderTimeline(d.vitalityStartDate);
+          renderVitalityData(d.vitalityStartDate);
           
           document.getElementById('loading').style.display = 'none';
           document.getElementById('main').style.display = 'flex';
           
-          // 현재 진행 중인 카드로 자동 스크롤
           setTimeout(() => {
             const currentEl = document.querySelector('.tl-item.current');
             if(currentEl) currentEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -136,7 +163,7 @@
         });
     };
 
-    function renderTimeline(startDateStr) {
+    function renderVitalityData(startDateStr) {
       const startDate = new Date(startDateStr);
       const today = new Date();
       startDate.setHours(0,0,0,0);
@@ -150,6 +177,28 @@
       document.getElementById('daysCount').innerText = `${diffDays}일 차 달성`;
       document.getElementById('moneySaved').innerText = savedMoney.toLocaleString();
 
+      // 전리품(명품) 계산 로직
+      let currentReward = rewardTiers[0];
+      let nextReward = null;
+      
+      for (let i = 0; i < rewardTiers.length; i++) {
+        if (savedMoney >= rewardTiers[i].price) {
+          currentReward = rewardTiers[i];
+        } else {
+          nextReward = rewardTiers[i];
+          break;
+        }
+      }
+
+      document.getElementById('rewardItem').innerText = currentReward.name;
+      if (nextReward) {
+        const amountLeft = nextReward.price - savedMoney;
+        document.getElementById('rewardNext').innerHTML = `다음 목표: <span>${nextReward.name}</span>까지 ${amountLeft.toLocaleString()}원 남음`;
+      } else {
+        document.getElementById('rewardNext').innerText = "모든 보상 티어를 달성하셨습니다.";
+      }
+
+      // 생체 타임라인 렌더링 로직
       let currentStageIndex = 0;
       for (let i = 0; i < timeline.length; i++) {
         if (diffDays >= timeline[i].days) currentStageIndex = i;
@@ -163,15 +212,18 @@
         const stage = timeline[i];
 
         if (i < currentStageIndex) {
-          // 이미 지나간 완료 레벨
+          // 달성 완료 레벨 (클릭 시 아코디언 오픈)
           htmlContent += `
-            <div class="tl-item completed">
-              <div class="tl-header"><span>✅ LEVEL ${i+1}</span><span>D+${stage.days}</span></div>
-              <div class="tl-desc">${stage.title}</div>
+            <div class="tl-item completed" onclick="toggleDesc('desc-${i}')">
+              <div class="tl-header">
+                <span>[ V ] LEVEL ${i+1} : ${stage.title} <span class="click-hint">(터치하여 확인)</span></span>
+                <span>D+${stage.days}</span>
+              </div>
+              <div class="tl-desc" id="desc-${i}" style="display:none;">"${stage.desc}"</div>
             </div>
           `;
         } else if (i === currentStageIndex) {
-          // 현재 머물고 있는 레벨 (경험치 바 포함)
+          // 현재 머물고 있는 레벨
           const nextStage = timeline[i+1];
           let progressHtml = '';
           
@@ -193,22 +245,32 @@
 
           htmlContent += `
             <div class="tl-item current">
-              <div class="tl-header"><span>🔥 LEVEL ${i+1} : ${stage.title}</span></div>
+              <div class="tl-header"><span>[ ! ] LEVEL ${i+1} : ${stage.title}</span></div>
               <div class="tl-desc">"${stage.desc}"</div>
               ${progressHtml}
             </div>
           `;
         } else {
-          // 아직 도달하지 못한 잠금 레벨
+          // 미달성 잠금 레벨
           htmlContent += `
             <div class="tl-item locked">
-              <div class="tl-header"><span>🔒 LEVEL ${i+1} : 봉인 해제 대기 중</span><span>목표 D+${stage.days}</span></div>
+              <div class="tl-header"><span>[ L ] LEVEL ${i+1} : 봉인 해제 대기 중</span><span>목표 D+${stage.days}</span></div>
             </div>
           `;
         }
       }
 
       container.innerHTML = htmlContent;
+    }
+
+    // 아코디언(숨김 내용 펼치기) 함수
+    function toggleDesc(id) {
+      const descElement = document.getElementById(id);
+      if (descElement.style.display === "none") {
+        descElement.style.display = "block";
+      } else {
+        descElement.style.display = "none";
+      }
     }
 
     function confirmSuccess() {
