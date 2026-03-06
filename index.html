@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+  <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00e5ff">
+<link rel="apple-touch-icon" href="icon.png">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>HEXAGON.OS // CYBERPUNK EDITION</title>
@@ -97,6 +100,15 @@
     #loading { color: var(--cyan); font-weight: bold; margin-top: 50px; letter-spacing: 2px; text-shadow: 0 0 10px var(--cyan); z-index: 5; position: relative;}
   </style>
 </head>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(reg => console.log('Service Worker 등록 완료:', reg.scope))
+        .catch(err => console.log('Service Worker 등록 실패:', err));
+    });
+  }
+</script>  
 <body>
 
   <header>
